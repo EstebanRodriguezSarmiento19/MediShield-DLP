@@ -1,6 +1,6 @@
 # MediShield DLP
 
-Sistema web universitario para la prevencion de perdida de datos medicos. La **Beta 0.1** ya contiene un vertical slice funcional del motor DLP: React envia un mensaje al backend, Node.js analiza contenido y destinatario y devuelve `PERMITIR`, `ALERTAR` o `BLOQUEAR`.
+Sistema web para la prevencion de perdida de datos medicos. La **Beta 0.1** ya contiene un vertical slice funcional del motor DLP: React envia un mensaje al backend, Node.js analiza contenido y destinatario y devuelve `PERMITIR`, `ALERTAR` o `BLOQUEAR`.
 
 La persistencia DLP completa en MySQL y el envio controlado con Mailpit son las siguientes etapas.
 
