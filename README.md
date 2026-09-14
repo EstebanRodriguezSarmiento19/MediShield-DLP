@@ -42,15 +42,15 @@ mysql -u root -p < database/schema.sql
 
 ## 2. Backend
 
-Copia la plantilla de variables:
+Copiar la plantilla de variables:
 
 ```bash
 cp .env.example server/.env
 ```
 
-Ajusta las credenciales de MySQL en `server/.env`.
+Ajustar las credenciales de MySQL en `server/.env`.
 
-Instala y ejecuta:
+Instalar y ejecutar:
 
 ```bash
 cd server
@@ -68,9 +68,8 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:5173`
+Frontend: `http://localhost:5174`
 
-Por defecto el cliente usa `http://localhost:3000/api`. Si necesitas cambiarlo, copia `client/.env.example` como `client/.env`.
 
 ## 4. Demo rapida
 
@@ -78,19 +77,18 @@ Abre:
 
 `http://localhost:5173/transfers`
 
-En **Casos de laboratorio** prueba, en orden:
+En **Casos de laboratorio** hay pruebas como:
 
 1. `Seguro` -> `PERMITIR`.
 2. `Advertencia` -> `ALERTAR`.
 3. `Bloqueo` -> `BLOQUEAR`.
 
-Luego abre:
+Abrir:
 
 - `/dashboard`: metricas reales de los analisis de esta ejecucion.
 - `/alerts`: solo decisiones `ALERTAR` y `BLOQUEAR`.
 - `/audit`: trazabilidad temporal con ID y hash SHA-256.
 
-La guia para sustentar la demo esta en [`docs/DEMO_DLP.md`](docs/DEMO_DLP.md).
 
 ## 5. API DLP
 
