@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-04T17:50:42.814Z",
+  "status": "PASS",
+  "errors": [],
+  "captures": [
+    "01-autenticacion.png",
+    "02-persistencia-dashboard.png",
+    "03-dlp-permitir.png",
+    "04-correo-confirmado.png",
+    "05-dlp-alertar.png",
+    "06-dlp-bloquear.png",
+    "07-destinatarios.png",
+    "08-reglas.png",
+    "09-alertas.png",
+    "10-auditoria.png",
+    "11-rol-profesional.png",
+    "after-thumbnails",
+    "before"
+  ],
+  "checks": [
+    "login",
+    "roles",
+    "permitir",
+    "alertar",
+    "bloquear",
+    "smtp",
+    "destinatarios",
+    "reglas",
+    "alertas",
+    "integridad",
+    "logout"
+  ]
+}

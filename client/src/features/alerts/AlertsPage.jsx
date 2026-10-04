@@ -1,85 +1,21 @@
-import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Chip,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material';
-import { getRecentDlpAnalyses } from '../dlp/dlpApi.js';
-
-function AlertsPage() {
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    getRecentDlpAnalyses(50)
-      .then((response) => {
-        setItems(response.data.filter((item) => item.decision !== 'PERMITIR'));
-      })
-      .catch((requestError) => setError(requestError.message));
-  }, []);
-
-  return (
-    <Stack spacing={3}>
-      <Box>
-        <Typography variant="h1">Alertas DLP</Typography>
-        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Transferencias que requieren advertencia o fueron bloqueadas por el motor.
-        </Typography>
-      </Box>
-
-      {error && <Alert severity="error">{error}</Alert>}
-
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Fecha</TableCell>
-                <TableCell>Destinatario</TableCell>
-                <TableCell>Riesgo</TableCell>
-                <TableCell>Coincidencias</TableCell>
-                <TableCell>Decision</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                    No hay alertas en esta ejecucion.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((item) => (
-                  <TableRow key={item.id} hover>
-                    <TableCell>{new Date(item.createdAt).toLocaleString('es-CO')}</TableCell>
-                    <TableCell>{item.recipient.email}</TableCell>
-                    <TableCell>{item.risk.score}/100</TableCell>
-                    <TableCell>{item.content.matches.length}</TableCell>
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        label={item.decision}
-                        color={item.decision === 'ALERTAR' ? 'warning' : 'error'}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </Stack>
-  );
+import {useEffect,useState} from 'react';
+import {Alert,Button,Chip,Paper,Stack,TextField,Typography} from '@mui/material';
+import api from '../../shared/services/api.js';
+export default function AlertsPage(){
+ const [items,setItems]=useState([]),[error,setError]=useState(''),[notes,setNotes]=useState({});
+ const load=()=>api.get('/alerts?limit=100').then(r=>setItems(r.data)).catch(e=>setError(e.message));
+ useEffect(()=>{load();},[]);
+ const review=async r=>{setError('');try{await api.patch('/alerts/'+r.alertId,{status:r.alertStatus==='ABIERTA'?'EN_REVISION':'CERRADA',note:notes[r.alertId]||'',version:r.version});await load();}catch(e){setError(e.message);}};
+ return <Stack spacing={3}><Typography variant="h1">Alertas DLP</Typography>
+  <Typography>Seguimiento de transferencias retenidas y bloqueadas. Cerrar una alerta registra su atención; la decisión DLP conserva su efecto.</Typography>
+  <Button onClick={load}>Actualizar</Button>{error&&<Alert severity="error">{error}</Alert>}
+  {!items.length&&<Typography>No hay alertas registradas.</Typography>}
+  {items.map(r=><Paper key={r.alertId} variant="outlined" sx={{p:3}}><Stack spacing={2}>
+   <Stack direction="row" spacing={2}><Chip label={r.decision} color={r.decision==='BLOQUEAR'?'error':'warning'}/><Chip label={r.alertStatus}/></Stack>
+   <Typography>{r.recipient.email} · Riesgo {r.risk.score}/100 · Usuario {r.ownerId}</Typography>
+   <Typography variant="caption">Análisis {r.id} · {new Date(r.createdAt).toLocaleString('es-CO')}</Typography>
+   <Typography>{r.reasons.join(' ')}</Typography>{r.note&&<Typography>Última nota: {r.note}</Typography>}
+   {r.alertStatus!=='CERRADA'&&<><TextField label="Nota de seguimiento" value={notes[r.alertId]||''} onChange={e=>setNotes({...notes,[r.alertId]:e.target.value})} inputProps={{maxLength:500}}/>
+   <Button onClick={()=>review(r)}>{r.alertStatus==='ABIERTA'?'Iniciar revisión':'Cerrar alerta'}</Button></>}
+  </Stack></Paper>)}</Stack>;
 }
-
-export default AlertsPage;

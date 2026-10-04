@@ -1,0 +1,20 @@
+✔ permite contenido administrativo a un destinatario interno autorizado (5.8808ms)
+✔ un destinatario desconocido nunca queda autorizado por defecto (0.4067ms)
+✔ advierte sobre destino externo autorizado sin historial (0.3011ms)
+✔ bloquea datos clínicos identificables incluso con destinatario externo habitual (0.3515ms)
+✔ normaliza acentos, caracteres de ancho completo y separadores invisibles (0.4599ms)
+✔ no expone texto sensible en la respuesta (0.4382ms)
+✔ rechaza campos de decisión, remitente y puntuación manipulados (0.6761ms)
+✔ rechaza destinatarios malformados e inyección de cabeceras (0.238ms)
+✔ rechaza payloads vacíos, arrays y tipos inesperados (0.337ms)
+✔ un subdominio engañoso se clasifica como externo (0.2605ms)
+✔ habitualidad usa la proporción de envíos confirmados del usuario (0.1719ms)
+✔ cadena HMAC detecta modificación, eliminación, reordenamiento y truncamiento (1.1823ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1014.381

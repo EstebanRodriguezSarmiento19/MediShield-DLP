@@ -21,3 +21,8 @@ npm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+
+# Configuración privada del laboratorio
+.env.lab
+.lab-accounts.json
+.lab-test-accounts.json

@@ -17,9 +17,13 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import ShieldOutlinedIconModule from '@mui/icons-material/ShieldOutlined';
 import useHealthCheck from '../../shared/hooks/useHealthCheck.js';
 import { getDlpStats, getRecentDlpAnalyses } from '../dlp/dlpApi.js';
+
+// Vite 8 may expose icons from MUI 5 as { default: Component } in development.
+// Normalize both module shapes so React always receives the component itself.
+const ShieldOutlinedIcon = ShieldOutlinedIconModule.default ?? ShieldOutlinedIconModule;
 
 const statCards = [
   { key: 'total', label: 'Analisis realizados' },
@@ -54,7 +58,7 @@ function DashboardPage() {
       <Box>
         <Typography variant="h1">Panel de control</Typography>
         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Estado de la beta y actividad real generada por el motor DLP durante esta ejecucion.
+          Actividad persistente del motor DLP. El profesional ve sus análisis; los roles de seguridad ven el conjunto.
         </Typography>
       </Box>
 
@@ -95,7 +99,7 @@ function DashboardPage() {
         <Box sx={{ p: 2.5, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h2">Actividad DLP reciente</Typography>
           <Typography variant="body2" color="text.secondary">
-            Estos datos provienen de analisis ejecutados realmente en el backend y se reinician al reiniciar el servidor en esta beta.
+            Los análisis se conservan en MySQL y permanecen disponibles después de reiniciar el servidor.
           </Typography>
         </Box>
         <TableContainer>

@@ -1,11 +1,10 @@
-import { Router } from 'express';
-import { analyze, recent, rules, stats } from './dlp.controller.js';
-
-const router = Router();
-
-router.post('/analyze', analyze);
-router.get('/stats', stats);
-router.get('/recent', recent);
-router.get('/rules', rules);
-
+import {Router} from 'express';
+import {analyze,recent,rules,stats} from './dlp.controller.js';
+import {roles} from '../auth/auth.js';
+import asyncHandler from '../../shared/utils/asyncHandler.js';
+const router=Router();
+router.post('/analyze',roles('usuario','admin'),asyncHandler(analyze));
+router.get('/stats',asyncHandler(stats));
+router.get('/recent',asyncHandler(recent));
+router.get('/rules',roles('admin','analista'),asyncHandler(rules));
 export default router;

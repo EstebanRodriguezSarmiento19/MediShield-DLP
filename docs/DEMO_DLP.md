@@ -1,76 +1,52 @@
-# Demo DLP - Beta 0.1
+# Demostración de MediShield DLP
 
-Esta iteracion incorpora un primer **vertical slice funcional** del nucleo de MediShield DLP. El analisis se ejecuta en Node.js, no en React.
+## Preparación
 
-## Que se puede demostrar
+1. Confirme que MySQL está iniciado.
+2. En `server`, ejecute `npm run db:setup` una sola vez o cuando necesite reconstruir los datos de laboratorio.
+3. Inicie `npm run smtp:lab`.
+4. Inicie el backend con `npm start`.
+5. Inicie el cliente con `npm run dev` y abra `http://localhost:5173`.
+6. Consulte las cuentas locales en `server/.lab-accounts.json`.
 
-1. El usuario abre **Analisis DLP**.
-2. Ingresa destinatario, asunto y mensaje.
-3. React envia la solicitud a `POST /api/dlp/analyze`.
-4. El backend aplica reglas deterministas y analiza el contexto del destinatario.
-5. El backend calcula un puntaje de riesgo entre 0 y 100.
-6. El motor decide `PERMITIR`, `ALERTAR` o `BLOQUEAR`.
-7. La interfaz muestra la decision, el puntaje, las reglas activadas y los motivos.
-8. El Dashboard, Alertas y Trazabilidad consumen los eventos que realmente se generaron durante la ejecucion.
+## Recorrido sugerido para el profesor
 
-> En esta beta los eventos DLP se mantienen en memoria. La persistencia completa en MySQL y el envio con Mailpit corresponden a la siguiente fase.
+### 1. Autenticación y roles
 
-## Reglas implementadas
+Entre como profesional de salud. Muestre que la sesión se conserva mediante una cookie `HttpOnly` y que el menú no expone administración. Intente abrir una ruta administrativa: la API devuelve `403`, aunque se escriba la URL manualmente.
 
-- `DLP-001`: identificacion sintetica con prefijos `CC` o `TI`.
-- `DLP-002`: codigos sinteticos de historia clinica como `HC-482910`.
-- `DLP-003`: terminologia clinica como `diagnostico`, `paciente`, `tratamiento` o `resultado de laboratorio`.
+### 2. Decisión PERMITIR y envío
 
-El resultado **no devuelve el texto sensible detectado**. Solo se exponen metadatos de coincidencia y un hash SHA-256 del contenido.
+Use el destinatario `laboratorio@hospital.local`, un asunto administrativo y un cuerpo sin patrones clínicos. El motor devuelve `PERMITIR`. Envíe el correo y muestre el archivo `.eml` creado en `evidence/mailbox`.
 
-## Escenario 1 - PERMITIR
+### 3. Decisión ALERTAR
 
-Destinatario:
+Use `auditoria@partner.test` y un texto con términos clínicos sintéticos. El motor devuelve `ALERTAR`, crea una alerta y no entrega el mensaje al SMTP.
 
-`laboratorio@hospital.local`
+### 4. Decisión BLOQUEAR
 
-Asunto:
+Use un destinatario externo o un texto con `HC-482910` y `CC 1012345678`. El motor devuelve `BLOQUEAR`, registra la decisión y no ofrece envío.
 
-`Reunion de equipo`
+### 5. Destinatarios y comportamiento
 
-Mensaje:
+Entre como administrador. Autorice y revoque un destinatario. Explique que el historial solo aumenta después de una entrega SMTP confirmada y que se mantiene separado por usuario.
 
-`Confirmo la reunion de seguimiento para manana a las 10:00 a. m.`
+### 6. Reglas
 
-Resultado esperado: `PERMITIR`.
+Cambie el peso de una regla. Muestre el incremento de versión y el evento de auditoría. Un profesional de salud no puede hacer esta modificación.
 
-## Escenario 2 - ALERTAR
+### 7. Alertas
 
-Destinatario:
+Abra una alerta, pásela a `EN_REVISION`, agregue una nota y ciérrela. El servidor rechaza saltos de estado no permitidos.
 
-`auditoria@partner.test`
+### 8. Auditoría y persistencia
 
-Asunto:
+Abra Auditoría y ejecute la comprobación de cadena. Reinicie el backend y muestre que sesiones, análisis, reglas y alertas siguen disponibles en MySQL.
 
-`Revision de resultados`
+## Frase breve para sustentar la arquitectura
 
-Mensaje:
+> La interfaz no decide si un dato puede salir. El backend autentica al usuario, aplica roles, valida el contenido y el destinatario, persiste la decisión y vuelve a comprobarla antes de entregar el correo a un SMTP local. Cada acción relevante queda enlazada en una bitácora HMAC y la cuenta SQL de la aplicación no puede modificar ni borrar esos eventos.
 
-`Se requiere revisar el resultado de laboratorio del paciente antes de la reunion.`
+## Evidencia reproducible
 
-Resultado esperado: `ALERTAR`.
-
-## Escenario 3 - BLOQUEAR
-
-Destinatario:
-
-`destino.personal@gmail.com`
-
-Asunto:
-
-`Historia clinica`
-
-Mensaje:
-
-`Referencia HC-482910 correspondiente al paciente identificado como CC 1012345678.`
-
-Resultado esperado: `BLOQUEAR`.
-
-## Como explicarlo al profesor
-
-> En esta primera beta dejamos de trabajar solo con mockups. El formulario envia el contenido al backend y el motor DLP aplica reglas reales de clasificacion. La decision no la toma React: Node.js analiza el contenido y el destinatario, calcula un puntaje y devuelve PERMITIR, ALERTAR o BLOQUEAR. Ademas evitamos devolver el contenido sensible y conservamos un hash para futura trazabilidad. En la siguiente iteracion vamos a persistir transferencias y alertas en MySQL y conectaremos Nodemailer con Mailpit para comprobar que un correo bloqueado nunca sale del sistema.
+Ejecute `npm test` y `npm run verify:lab` dentro de `server`. Los resultados se guardan en `evidence/after`. El índice navegable está en `evidence/index.html` y la matriz de capturas en `evidence/Matriz_Verificacion_MediShield_DLP.xlsx`.

@@ -1,27 +1,7 @@
-/**
- * Middleware centralizado de manejo de errores.
- * Debe registrarse en app.js como el último middleware.
- *
- * Cualquier error lanzado (o pasado con next(error)) termina aquí,
- * incluyendo los AppError controlados y errores inesperados.
- */
-// eslint-disable-next-line no-unused-vars
-function errorHandler(error, req, res, next) {
-  const statusCode = error.statusCode || 500;
-  const message = error.isOperational
-    ? error.message
-    : 'Error interno del servidor';
-
-  if (!error.isOperational) {
-    console.error('[ERROR NO CONTROLADO]', error);
-  }
-
-  res.status(statusCode).json({
-    success: false,
-    error: {
-      message,
-    },
-  });
+export default function errorHandler(error,req,res,next) {
+  const parser=error.type==='entity.parse.failed'||error.type==='entity.too.large';
+  const unavailable=['ECONNREFUSED','ETIMEDOUT','PROTOCOL_CONNECTION_LOST','ER_CON_COUNT_ERROR'].includes(error.code);
+  const status=parser?(error.type==='entity.too.large'?413:400):unavailable?503:error.statusCode||500;
+  if(status>=500) console.error('[MediShield]',error.code||error.name);
+  res.status(status).json({success:false,error:{message:parser?'JSON inválido o solicitud demasiado grande.':unavailable?'La base de datos no está disponible. No se guardó la operación.':error.isOperational?error.message:'Error interno del servidor'}});
 }
-
-export default errorHandler;

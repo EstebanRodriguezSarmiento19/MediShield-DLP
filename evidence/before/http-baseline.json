@@ -1,0 +1,216 @@
+{
+  "capturedAt": "2026-10-02T01:00:24.355Z",
+  "observations": [
+    {
+      "name": "Analisis sin autenticacion",
+      "method": "POST",
+      "path": "/dlp/analyze",
+      "request": {
+        "recipient": "laboratorio@hospital.local",
+        "subject": "Agenda",
+        "body": "Reunion administrativa"
+      },
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "id": "92530d7b-87f2-4eed-86ec-dffcd21a83ef",
+          "createdAt": "2026-10-02T01:00:24.329Z",
+          "recipient": {
+            "email": "laboratorio@hospital.local",
+            "domain": "hospital.local",
+            "type": "INTERNO",
+            "hasHistory": true,
+            "habituality": 100,
+            "authorized": true,
+            "isAtypical": false,
+            "score": 0,
+            "reasons": [
+              "El destinatario aparece como habitual en el escenario de laboratorio."
+            ]
+          },
+          "content": {
+            "score": 0,
+            "matches": [],
+            "contentHash": "e05ded7fbaf17517430f32a19003ff6b1771bc0f6712fbf6f828afbe12944a06"
+          },
+          "risk": {
+            "score": 0,
+            "level": "BAJO"
+          },
+          "decision": "PERMITIR",
+          "latencyMs": 1,
+          "reasons": [
+            "No se detectaron patrones de informacion medica sensible.",
+            "El destinatario aparece como habitual en el escenario de laboratorio.",
+            "El riesgo calculado esta dentro del rango permitido."
+          ]
+        }
+      }
+    },
+    {
+      "name": "Destinatario malformado aceptado",
+      "method": "POST",
+      "path": "/dlp/analyze",
+      "request": {
+        "recipient": "x@",
+        "body": "Agenda"
+      },
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "id": "9a7ed04c-31d9-4123-8ace-e786da75fbaf",
+          "createdAt": "2026-10-02T01:00:24.342Z",
+          "recipient": {
+            "email": "x@",
+            "domain": "",
+            "type": "EXTERNO",
+            "hasHistory": false,
+            "habituality": 0,
+            "authorized": true,
+            "isAtypical": true,
+            "score": 50,
+            "reasons": [
+              "El destinatario pertenece a un dominio externo al laboratorio.",
+              "No existe historial previo con este destinatario en los datos de laboratorio."
+            ]
+          },
+          "content": {
+            "score": 0,
+            "matches": [],
+            "contentHash": "8afcbae91702e828c043436c8b6b66f4fe105f4d9221517cc4018ba257929be9"
+          },
+          "risk": {
+            "score": 50,
+            "level": "MEDIO"
+          },
+          "decision": "ALERTAR",
+          "latencyMs": 1,
+          "reasons": [
+            "No se detectaron patrones de informacion medica sensible.",
+            "El destinatario pertenece a un dominio externo al laboratorio.",
+            "No existe historial previo con este destinatario en los datos de laboratorio.",
+            "La transferencia requiere revision o confirmacion antes de un envio futuro."
+          ]
+        }
+      }
+    },
+    {
+      "name": "Lectura global sin autenticacion",
+      "method": "GET",
+      "path": "/dlp/recent",
+      "request": null,
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "9a7ed04c-31d9-4123-8ace-e786da75fbaf",
+            "createdAt": "2026-10-02T01:00:24.342Z",
+            "recipient": {
+              "email": "x@",
+              "domain": "",
+              "type": "EXTERNO",
+              "hasHistory": false,
+              "habituality": 0,
+              "authorized": true,
+              "isAtypical": true,
+              "score": 50,
+              "reasons": [
+                "El destinatario pertenece a un dominio externo al laboratorio.",
+                "No existe historial previo con este destinatario en los datos de laboratorio."
+              ]
+            },
+            "content": {
+              "score": 0,
+              "matches": [],
+              "contentHash": "8afcbae91702e828c043436c8b6b66f4fe105f4d9221517cc4018ba257929be9"
+            },
+            "risk": {
+              "score": 50,
+              "level": "MEDIO"
+            },
+            "decision": "ALERTAR",
+            "latencyMs": 1,
+            "reasons": [
+              "No se detectaron patrones de informacion medica sensible.",
+              "El destinatario pertenece a un dominio externo al laboratorio.",
+              "No existe historial previo con este destinatario en los datos de laboratorio.",
+              "La transferencia requiere revision o confirmacion antes de un envio futuro."
+            ]
+          },
+          {
+            "id": "92530d7b-87f2-4eed-86ec-dffcd21a83ef",
+            "createdAt": "2026-10-02T01:00:24.329Z",
+            "recipient": {
+              "email": "laboratorio@hospital.local",
+              "domain": "hospital.local",
+              "type": "INTERNO",
+              "hasHistory": true,
+              "habituality": 100,
+              "authorized": true,
+              "isAtypical": false,
+              "score": 0,
+              "reasons": [
+                "El destinatario aparece como habitual en el escenario de laboratorio."
+              ]
+            },
+            "content": {
+              "score": 0,
+              "matches": [],
+              "contentHash": "e05ded7fbaf17517430f32a19003ff6b1771bc0f6712fbf6f828afbe12944a06"
+            },
+            "risk": {
+              "score": 0,
+              "level": "BAJO"
+            },
+            "decision": "PERMITIR",
+            "latencyMs": 1,
+            "reasons": [
+              "No se detectaron patrones de informacion medica sensible.",
+              "El destinatario aparece como habitual en el escenario de laboratorio.",
+              "El riesgo calculado esta dentro del rango permitido."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Reglas sin autenticacion",
+      "method": "GET",
+      "path": "/dlp/rules",
+      "request": null,
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "DLP-001",
+            "name": "Identificacion personal",
+            "category": "IDENTIFICACION",
+            "sensitivity": "ALTO",
+            "weight": 35,
+            "description": "Detecta identificadores sinteticos con prefijos CC o TI."
+          },
+          {
+            "id": "DLP-002",
+            "name": "Historia clinica",
+            "category": "HISTORIA_CLINICA",
+            "sensitivity": "CRITICO",
+            "weight": 50,
+            "description": "Detecta codigos sinteticos de historia clinica."
+          },
+          {
+            "id": "DLP-003",
+            "name": "Terminologia clinica",
+            "category": "TERMINO_CLINICO",
+            "sensitivity": "MEDIO",
+            "weight": 25,
+            "description": "Detecta vocabulario relacionado con informacion medica sensible."
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,32 +1,29 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import {rateLimit} from 'express-rate-limit';
 import env from './config/env.js';
-import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
+import notFound from './middleware/notFound.js';
 import healthRoutes from './features/health/health.routes.js';
 import dlpRoutes from './features/dlp/dlp.routes.js';
-
-/**
- * app.js configura la aplicación Express (middlewares y rutas).
- * No inicia el servidor aquí: eso ocurre en server.js.
- *
- * A medida que se agreguen features (auth, transfers, dlp, etc.)
- * cada una debe montar sus propias rutas aquí, siguiendo el
- * mismo patrón que /api/health.
- */
-const app = express();
-
-app.use(cors({ origin: env.clientOrigin }));
-app.use(express.json({ limit: '100kb' }));
-
-app.use('/api/health', healthRoutes);
-app.use('/api/dlp', dlpRoutes);
-
-// Futuras rutas de features se agregarán aquí, por ejemplo:
-// app.use('/api/auth', authRoutes);
-// app.use('/api/transfers', transfersRoutes);
-
+import authRoutes,{requireAuth,csrf,sameOrigin} from './features/auth/auth.js';
+import securityRoutes from './features/security/security.routes.js';
+import mailRoutes from './features/mail/mail.routes.js';
+const app=express();
+app.disable('x-powered-by');
+app.use(helmet({strictTransportSecurity:env.production?undefined:false}));
+app.use(cors({origin:env.clientOrigin,credentials:true}));
+app.use((req,res,next)=>{res.set('Cache-Control','no-store'); next();});
+app.use('/api',rateLimit({windowMs:60000,limit:180,standardHeaders:'draft-7',legacyHeaders:false,
+  message:{success:false,error:{message:'Demasiadas solicitudes. Espera un minuto.'}}}));
+app.use(express.json({limit:'64kb'}));
+app.use('/api/health',healthRoutes);
+app.use('/api/auth',authRoutes);
+app.use('/api',sameOrigin,requireAuth,csrf);
+app.use('/api/dlp',dlpRoutes);
+app.use('/api/mail',mailRoutes);
+app.use('/api',securityRoutes);
 app.use(notFound);
 app.use(errorHandler);
-
 export default app;

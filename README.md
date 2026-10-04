@@ -1,154 +1,100 @@
 # MediShield DLP
 
-Sistema web para la prevencion de perdida de datos medicos. La **Beta 0.1** ya contiene un vertical slice funcional del motor DLP: React envia un mensaje al backend, Node.js analiza contenido y destinatario y devuelve `PERMITIR`, `ALERTAR` o `BLOQUEAR`.
+MediShield DLP es un sistema web para prevenir la salida no autorizada de datos clínicos sintéticos. React presenta la interfaz y una API de Node.js toma todas las decisiones de seguridad. MySQL conserva usuarios, sesiones, destinatarios, reglas, transferencias, alertas, historial y auditoría.
 
-La persistencia DLP completa en MySQL y el envio controlado con Mailpit son las siguientes etapas.
+## Funciones implementadas
 
-## Tecnologias
-
-**Frontend:** React, Vite, JavaScript, Material UI, React Router  
-**Backend:** Node.js, Express, JavaScript, mysql2, dotenv  
-**Base de datos:** MySQL  
-**Pruebas:** `node:test` para el nucleo DLP
-
-## Que funciona ahora
-
-- Feature-Based Architecture en frontend y backend.
-- `GET /api/health` con comprobacion de MySQL.
-- `POST /api/dlp/analyze` con analisis server-side real.
-- Reglas DLP deterministas para identificacion, historia clinica y terminologia medica.
-- Analisis contextual de destinatarios de laboratorio.
-- Puntaje de riesgo de 0 a 100.
-- Decisiones `PERMITIR`, `ALERTAR` y `BLOQUEAR`.
-- SHA-256 del contenido en lugar de devolver el texto sensible como evidencia.
-- Dashboard con metricas generadas por analisis reales de la ejecucion.
-- Vista de alertas DLP.
-- Vista temporal de trazabilidad.
-- Cinco pruebas automatizadas del motor DLP.
-
-Los eventos DLP se almacenan **en memoria** durante esta beta y desaparecen al reiniciar el backend. MySQL se usa actualmente para comprobar infraestructura y contiene la tabla inicial de usuarios. La siguiente fase migrara la evidencia DLP a las tablas definitivas.
+- Autenticación real con contraseñas derivadas mediante `scrypt`, sesiones aleatorias almacenadas en MySQL, cookie `HttpOnly` con `SameSite=Strict`, protección CSRF, validación de origen y límite persistente de intentos.
+- Roles `admin`, `analista` y `usuario`, aplicados en el servidor.
+- Motor DLP que normaliza y valida la entrada, identifica patrones sensibles y decide `PERMITIR`, `ALERTAR` o `BLOQUEAR`.
+- Catálogo persistente de destinatarios autorizados o revocados, con control de versión.
+- Historial remitente-destinatario calculado únicamente a partir de entregas SMTP confirmadas.
+- Reglas DLP administrables, ponderadas, versionadas y protegidas por rol.
+- Alertas persistentes con flujo `ABIERTA → EN_REVISION → CERRADA`, notas y registro de cada transición.
+- Auditoría encadenada con HMAC-SHA256. La cuenta SQL de la aplicación no posee permisos `UPDATE` ni `DELETE` sobre `audit_event`.
+- Receptor SMTP local que guarda archivos `.eml` y nunca retransmite correo a Internet.
+- Cabeceras HTTP de seguridad, respuestas sensibles sin caché y límites de solicitudes.
 
 ## Requisitos
 
-- Node.js 18 o superior.
+- Node.js 20 o superior.
 - npm.
-- MySQL 8 o compatible para comprobar la capa de datos. El motor DLP puede demostrarse aunque MySQL todavia no este configurado.
+- MySQL 8 o compatible en ejecución.
 
-## 1. Base de datos
+## Preparación inicial
 
-```bash
-mysql -u root -p < database/schema.sql
-```
+1. Copie `.env.example` como `server/.env` y configure la conexión administrativa a MySQL.
+2. Instale las dependencias:
 
-## 2. Backend
-
-Copiar la plantilla de variables:
-
-```bash
-cp .env.example server/.env
-```
-
-Ajustar las credenciales de MySQL en `server/.env`.
-
-Instalar y ejecutar:
-
-```bash
+```powershell
 cd server
 npm install
-npm run dev
-```
+npm run db:setup
 
-Backend: `http://localhost:3000`
-
-## 3. Frontend
-
-```bash
-cd client
+cd ..\client
 npm install
+```
+
+`npm run db:setup` crea o actualiza el esquema, carga datos sintéticos, genera cuentas de laboratorio y crea una cuenta SQL con privilegios mínimos. Las contraseñas quedan únicamente en `server/.lab-accounts.json`. La configuración privada queda en `server/.env.lab`. Ambos archivos están excluidos de Git.
+
+## Ejecución
+
+Abra tres terminales en la raíz del proyecto.
+
+Terminal 1:
+
+```powershell
+cd server
+npm run smtp:lab
+```
+
+Terminal 2:
+
+```powershell
+cd server
+npm start
+```
+
+Terminal 3:
+
+```powershell
+cd client
 npm run dev
 ```
 
-Frontend: `http://localhost:5174`
+Abra `http://localhost:5173`. Use una cuenta de `server/.lab-accounts.json` según el rol que quiera demostrar.
 
+## Pruebas y evidencias
 
-## 4. Demo rapida
+Pruebas unitarias del motor:
 
-Abre:
-
-`http://localhost:5173/transfers`
-
-En **Casos de laboratorio** hay pruebas como:
-
-1. `Seguro` -> `PERMITIR`.
-2. `Advertencia` -> `ALERTAR`.
-3. `Bloqueo` -> `BLOQUEAR`.
-
-Abrir:
-
-- `/dashboard`: metricas reales de los analisis de esta ejecucion.
-- `/alerts`: solo decisiones `ALERTAR` y `BLOQUEAR`.
-- `/audit`: trazabilidad temporal con ID y hash SHA-256.
-
-
-## 5. API DLP
-
-### Analizar una transferencia
-
-`POST /api/dlp/analyze`
-
-Ejemplo:
-
-```json
-{
-  "recipient": "destino.personal@gmail.com",
-  "subject": "Historia clinica",
-  "body": "Referencia HC-482910 del paciente CC 1012345678"
-}
-```
-
-El backend calcula el resultado. El frontend no puede elegir la decision.
-
-### Estadisticas temporales
-
-`GET /api/dlp/stats`
-
-### Actividad reciente
-
-`GET /api/dlp/recent?limit=10`
-
-### Reglas publicas
-
-`GET /api/dlp/rules`
-
-## 6. Pruebas
-
-```bash
+```powershell
 cd server
 npm test
 ```
 
-Se prueban casos de permitir, alertar, bloquear, destinatario no autorizado y minimizacion de datos.
+Verificación integral aislada:
 
-## Estado de la hoja de ruta
+```powershell
+cd server
+npm run verify:lab
+```
 
-### Beta 0.1 - actual
+La verificación integral inicia una API temporal y un SMTP local, crea cuentas sintéticas descartables, ejecuta 26 controles y guarda el resultado en `evidence/after/verification.json`.
 
-- [x] Base React / Express.
-- [x] Conexion preparada con MySQL.
-- [x] Motor DLP determinista server-side.
-- [x] Analisis de destinatario de laboratorio.
-- [x] Dashboard de actividad real.
-- [x] Alertas temporales.
-- [x] Hash de evidencia.
-- [x] Tests del nucleo.
+Resultados verificados el 1 de octubre de 2026:
 
-### Siguiente fase
+- 12 de 12 pruebas unitarias aprobadas.
+- 26 de 26 controles integrales aprobados.
+- SAST: 0 errores y 0 advertencias en el backend.
+- SCA: 0 vulnerabilidades reportadas en cliente y servidor.
+- Compilación del cliente completada.
+- Flujo visual automatizado: 11 capturas y 0 errores JavaScript.
+- Prueba local secuencial de 20 análisis: p50 22 ms, p95 36 ms y máximo 38 ms. Es una observación del equipo local, no una prueba de carga de producción.
 
-- [ ] Autenticacion real y roles.
-- [ ] Persistencia de transferencias y analisis DLP en MySQL.
-- [ ] Historial real remitente-destinatario.
-- [ ] Auditoria persistente.
-- [ ] Nodemailer + Mailpit.
-- [ ] Confirmacion de transferencias en estado `ALERTAR`.
+Consulte [`docs/VERIFICACION_6_MODULOS.md`](docs/VERIFICACION_6_MODULOS.md) para repetir la demostración y relacionar cada módulo con sus pruebas. Abra `evidence/index.html` para navegar el paquete de evidencia.
 
-Despues se incorporaran Snort, Gophish, OWASP ZAP y analisis de datos con Python sin romper el nucleo de la aplicacion.
+## Alcance del laboratorio
+
+El sistema procesa datos sintéticos. El SMTP local recibe y conserva mensajes en disco sin enviarlos a redes externas. Las pruebas HTTP dirigidas cubren autenticación, autorización, CSRF, IDOR, inyección SQL, manipulación de solicitudes y fuzzing básico. No sustituyen una auditoría externa ni una campaña completa con OWASP ZAP.
+

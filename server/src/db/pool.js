@@ -14,7 +14,10 @@ const pool = mysql.createPool({
   database: env.db.database,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
+  queueLimit: 50,
+  timezone: 'Z',
+  connectTimeout: 5000,
+  multipleStatements: false,
 });
 
 /**
@@ -24,9 +27,7 @@ const pool = mysql.createPool({
  */
 export async function checkDatabaseConnection() {
   try {
-    const connection = await pool.getConnection();
-    await connection.ping();
-    connection.release();
+    await pool.execute('SELECT id FROM audit_head WHERE id = 1');
     return true;
   } catch (error) {
     return false;
@@ -34,3 +35,16 @@ export async function checkDatabaseConnection() {
 }
 
 export default pool;
+
+export async function transaction(fn) {
+  const cx = await pool.getConnection();
+  try {
+    await cx.beginTransaction();
+    // Common lock order serializes state changes and audit append in the lab.
+    await cx.execute('SELECT sequence_no FROM audit_head WHERE id = 1 FOR UPDATE');
+    const value = await fn(cx);
+    await cx.commit();
+    return value;
+  } catch (error) { await cx.rollback(); throw error; }
+  finally { cx.release(); }
+}

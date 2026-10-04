@@ -1,75 +1,17 @@
-import { useEffect, useState } from 'react';
-import {
-  Box,
-  Chip,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material';
-import { getRecentDlpAnalyses } from '../dlp/dlpApi.js';
-
-function AuditPage() {
-  const [items, setItems] = useState([]);
-
-  useEffect(() => {
-    getRecentDlpAnalyses(50)
-      .then((response) => setItems(response.data))
-      .catch(() => setItems([]));
-  }, []);
-
-  return (
-    <Stack spacing={3}>
-      <Box>
-        <Typography variant="h1">Trazabilidad de analisis</Typography>
-        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Vista temporal de evidencia tecnica. La auditoria persistente en MySQL se implementara en la siguiente fase.
-        </Typography>
-      </Box>
-
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Fecha</TableCell>
-                <TableCell>Destino</TableCell>
-                <TableCell>Reglas</TableCell>
-                <TableCell>Hash</TableCell>
-                <TableCell>Decision</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                    Todavia no hay evidencia de analisis en memoria.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((item) => (
-                  <TableRow key={item.id} hover>
-                    <TableCell sx={{ fontFamily: 'monospace' }}>{item.id.slice(0, 8)}</TableCell>
-                    <TableCell>{new Date(item.createdAt).toLocaleString('es-CO')}</TableCell>
-                    <TableCell>{item.recipient.email}</TableCell>
-                    <TableCell>{item.content.matches.length}</TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace' }}>{item.content.contentHash.slice(0, 12)}…</TableCell>
-                    <TableCell><Chip size="small" variant="outlined" label={item.decision} /></TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </Stack>
-  );
+import {useEffect,useState} from 'react';
+import {Alert,Button,Paper,Stack,Table,TableBody,TableCell,TableHead,TableRow,Typography} from '@mui/material';
+import api from '../../shared/services/api.js';
+export default function AuditPage(){
+ const [items,setItems]=useState([]),[error,setError]=useState(''),[integrity,setIntegrity]=useState(null);
+ const load=()=>api.get('/audit?limit=100').then(r=>setItems(r.data)).catch(e=>setError(e.message));
+ useEffect(()=>{load();},[]);
+ async function verify(){try{const r=await api.get('/audit/verify');setIntegrity(r.data);await load();}catch(e){setError(e.message);}}
+ return <Stack spacing={3}><Typography variant="h1">Auditoría</Typography>
+  <Typography>Eventos persistentes con actor, fecha UTC, acción y resultado. La cadena HMAC detecta cambios en los registros; la cuenta SQL de aplicación no puede editarlos ni borrarlos.</Typography>
+  <Stack direction="row" spacing={2}><Button onClick={load}>Actualizar</Button><Button variant="contained" onClick={verify}>Verificar integridad</Button></Stack>
+  {error&&<Alert severity="error">{error}</Alert>}
+  {integrity&&<Alert severity={integrity.valid?'success':'error'}>{integrity.valid?'Cadena íntegra':'Alteración detectada'} · {integrity.checked} registros comprobados</Alert>}
+  <Paper variant="outlined" sx={{overflowX:'auto'}}><Table size="small"><TableHead><TableRow>{['N.º','Fecha UTC','Actor','Acción','Recurso','Resultado','HMAC'].map(x=><TableCell key={x}>{x}</TableCell>)}</TableRow></TableHead>
+   <TableBody>{items.map(r=><TableRow key={r.sequence}><TableCell>{r.sequence}</TableCell><TableCell>{r.at}</TableCell><TableCell>{r.actor??'Sin sesión'}</TableCell><TableCell>{r.action}</TableCell><TableCell sx={{maxWidth:180,overflowWrap:'anywhere'}}>{r.resource||'—'}</TableCell><TableCell>{r.outcome}</TableCell><TableCell title={r.hash} sx={{fontFamily:'monospace'}}>{r.hash.slice(0,16)}…</TableCell></TableRow>)}</TableBody></Table></Paper>
+ </Stack>;
 }
-
-export default AuditPage;

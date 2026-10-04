@@ -1,175 +1,47 @@
 import crypto from 'node:crypto';
 import dlpRules from './dlp.rules.js';
-import demoRecipients from './dlp.demoRecipients.js';
-
-const INTERNAL_DOMAINS = new Set(['hospital.local', 'clinica.local', 'medishield.local']);
-
-const RISK_CONFIG = Object.freeze({
-  externalRecipient: 25,
-  noHistory: 25,
-  lowHabituality: 15,
-  lowHabitualityThreshold: 30,
-  maxContentScore: 60,
-  allowMax: 39,
-  alertMax: 69,
-});
-
-function normalizeText(value) {
-  return typeof value === 'string' ? value.trim() : '';
+import { object, email, text, fail } from '../../shared/validation.js';
+export function validateTransfer(payload) {
+  object(payload,['recipient','subject','body']);
+  const recipient=email(payload.recipient), subject=text(payload.subject??'','Asunto',200,false), body=text(payload.body??'','Mensaje',20000,false);
+  if (!subject && !body) fail('Ingresa un asunto o mensaje.');
+  return {recipient,subject,body};
 }
-
-function getRecipientDomain(email) {
-  const parts = email.toLowerCase().split('@');
-  return parts.length === 2 ? parts[1] : '';
+export const contentHash = ({subject,body}) => crypto.createHash('sha256').update(subject+'\n'+body).digest('hex');
+export function evaluateRecipient(address, profile, sentCount=0, totalSends=0) {
+  const domain=address.split('@')[1];
+  const external=!['hospital.local','clinica.local','medishield.local'].includes(domain);
+  const habituality=totalSends>0?Math.round(sentCount/totalSends*100):0;
+  const authorized=Boolean(profile?.autorizado);
+  const reasons=[];
+  if (!authorized) reasons.push('El destinatario no está autorizado en el catálogo.');
+  if (external) reasons.push('El dominio es externo al laboratorio.');
+  if (!sentCount) reasons.push('No hay envíos SMTP confirmados de este usuario a este destinatario.');
+  return {email:address,domain,type:external?'EXTERNO':'INTERNO',authorized,hasHistory:sentCount>0,
+    previousSends:sentCount,habituality,version:profile?.version??0,
+    isAtypical:external || !sentCount || habituality<30,
+    score:(external?25:0)+(!sentCount?25:habituality<30?15:0),reasons};
 }
-
-function analyzeContent(subject, body) {
-  const content = `${subject}\n${body}`;
-  const matches = [];
-
-  for (const rule of dlpRules) {
-    const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
-    const found = content.match(regex) || [];
-
-    if (found.length > 0) {
-      matches.push({
-        ruleId: rule.id,
-        name: rule.name,
-        category: rule.category,
-        sensitivity: rule.sensitivity,
-        count: found.length,
-        weight: rule.weight,
-      });
-    }
+export function analyzeTransfer(payload, context={}) {
+  const clean=validateTransfer(payload), started=performance.now();
+  const source=(clean.subject+'\n'+clean.body).normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const rules=context.rules??dlpRules.map(r=>({...r,version:1}));
+  const matches=[];
+  for (const rule of rules) {
+    const found=Array.from(source.matchAll(rule.pattern));
+    if (found.length) matches.push({ruleId:rule.id,name:rule.name,category:rule.category,sensitivity:rule.sensitivity,count:found.length,weight:rule.weight,version:rule.version});
   }
-
-  const rawScore = matches.reduce((total, match) => total + match.weight, 0);
-
-  return {
-    score: Math.min(RISK_CONFIG.maxContentScore, rawScore),
-    matches,
-  };
+  const recipient=context.recipient??evaluateRecipient(clean.recipient,null);
+  const score=Math.min(60,matches.reduce((sum,r)=>sum+r.weight,0));
+  const risk=Math.min(100,score+recipient.score);
+  const highExternal=recipient.type==='EXTERNO' && matches.some(m=>['ALTO','CRITICO'].includes(m.sensitivity));
+  const decision=!recipient.authorized||highExternal||risk>=70?'BLOQUEAR':risk>=40?'ALERTAR':'PERMITIR';
+  return {id:crypto.randomUUID(),createdAt:new Date().toISOString(),recipient,
+    content:{score,matches,contentHash:contentHash(clean)},risk:{score:risk,level:decision==='BLOQUEAR'?'ALTO':decision==='ALERTAR'?'MEDIO':'BAJO'},
+    decision,latencyMs:Math.max(1,Math.round(performance.now()-started)),policyVersion:'2.0',
+    rulesVersion:rules.map(r=>r.id+':'+r.version),
+    reasons:[matches.length?matches.length+' regla(s) detectada(s).':'No se detectaron patrones sensibles.',
+      ...recipient.reasons,...(highExternal?['Los identificadores o historias clínicas no pueden enviarse a dominios externos.']:[]),
+      decision==='PERMITIR'?'Autorizada para envío controlado.':decision==='ALERTAR'?'Retenida para revisión. No se envía correo.':'Transferencia bloqueada. No se envía correo.']};
 }
-
-function analyzeRecipient(email) {
-  const normalizedEmail = email.toLowerCase();
-  const domain = getRecipientDomain(normalizedEmail);
-  const isExternal = !INTERNAL_DOMAINS.has(domain);
-  const profile = demoRecipients[normalizedEmail];
-  const hasHistory = Boolean(profile && profile.previousSends > 0);
-  const habituality = profile?.habituality ?? 0;
-  const authorized = profile?.authorized ?? true;
-  const reasons = [];
-  let score = 0;
-
-  if (isExternal) {
-    score += RISK_CONFIG.externalRecipient;
-    reasons.push('El destinatario pertenece a un dominio externo al laboratorio.');
-  }
-
-  if (!hasHistory) {
-    score += RISK_CONFIG.noHistory;
-    reasons.push('No existe historial previo con este destinatario en los datos de laboratorio.');
-  }
-
-  if (hasHistory && habituality < RISK_CONFIG.lowHabitualityThreshold) {
-    score += RISK_CONFIG.lowHabituality;
-    reasons.push('La habitualidad del destinatario es baja.');
-  }
-
-  if (hasHistory && reasons.length === 0) {
-    reasons.push('El destinatario aparece como habitual en el escenario de laboratorio.');
-  }
-
-  if (!authorized) {
-    reasons.push('El destinatario esta marcado como no autorizado por la politica de laboratorio.');
-  }
-
-  return {
-    email: normalizedEmail,
-    domain,
-    type: isExternal ? 'EXTERNO' : 'INTERNO',
-    hasHistory,
-    habituality,
-    authorized,
-    isAtypical: isExternal || !hasHistory || habituality < RISK_CONFIG.lowHabitualityThreshold,
-    score,
-    reasons,
-  };
-}
-
-function getDecision(totalScore, recipient) {
-  if (!recipient.authorized) return 'BLOQUEAR';
-  if (totalScore <= RISK_CONFIG.allowMax) return 'PERMITIR';
-  if (totalScore <= RISK_CONFIG.alertMax) return 'ALERTAR';
-  return 'BLOQUEAR';
-}
-
-function getDecisionExplanation(decision, content, recipient) {
-  const reasons = [...recipient.reasons];
-
-  if (content.matches.length === 0) {
-    reasons.unshift('No se detectaron patrones de informacion medica sensible.');
-  } else {
-    reasons.unshift(
-      `Se detectaron ${content.matches.length} regla(s) DLP unica(s) en asunto o cuerpo.`,
-    );
-  }
-
-  const decisionText = {
-    PERMITIR: 'El riesgo calculado esta dentro del rango permitido.',
-    ALERTAR: 'La transferencia requiere revision o confirmacion antes de un envio futuro.',
-    BLOQUEAR: 'La transferencia supera el umbral permitido o viola una politica de destino.',
-  }[decision];
-
-  return [...reasons, decisionText];
-}
-
-export function analyzeTransfer(payload) {
-  const recipient = normalizeText(payload.recipient);
-  const subject = normalizeText(payload.subject);
-  const body = normalizeText(payload.body);
-
-  if (!recipient || !recipient.includes('@')) {
-    const error = new Error('Ingresa un destinatario valido.');
-    error.statusCode = 400;
-    error.isOperational = true;
-    throw error;
-  }
-
-  if (!subject && !body) {
-    const error = new Error('Debes ingresar un asunto o un mensaje para analizar.');
-    error.statusCode = 400;
-    error.isOperational = true;
-    throw error;
-  }
-
-  const startedAt = performance.now();
-  const content = analyzeContent(subject, body);
-  const recipientAnalysis = analyzeRecipient(recipient);
-  const totalScore = Math.min(100, content.score + recipientAnalysis.score);
-  const decision = getDecision(totalScore, recipientAnalysis);
-  const latencyMs = Math.max(1, Math.round(performance.now() - startedAt));
-
-  return {
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    recipient: recipientAnalysis,
-    content: {
-      score: content.score,
-      matches: content.matches,
-      contentHash: crypto.createHash('sha256').update(`${subject}\n${body}`).digest('hex'),
-    },
-    risk: {
-      score: totalScore,
-      level: totalScore >= 70 ? 'ALTO' : totalScore >= 40 ? 'MEDIO' : 'BAJO',
-    },
-    decision,
-    latencyMs,
-    reasons: getDecisionExplanation(decision, content, recipientAnalysis),
-  };
-}
-
-export function getPublicRules() {
-  return dlpRules.map(({ pattern, ...rule }) => rule);
-}
+export function getPublicRules() { return dlpRules.map(({pattern,...r})=>r); }

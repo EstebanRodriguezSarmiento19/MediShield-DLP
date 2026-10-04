@@ -1,0 +1,13 @@
+
+> medishield-dlp-client@0.1.0 build
+> vite build
+
+vite v8.3.2 building client environment for production...
+transforming...
+✓ 886 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  0.32 kB │ gzip:   0.23 kB
+dist/assets/index-CrKB-pPZ.js  492.44 kB │ gzip: 155.31 kB
+
+✓ built in 1.40s

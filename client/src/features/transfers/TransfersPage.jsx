@@ -14,9 +14,14 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
+import ScienceOutlinedIconModule from '@mui/icons-material/ScienceOutlined';
+import SecurityOutlinedIconModule from '@mui/icons-material/SecurityOutlined';
 import { analyzeTransfer } from '../dlp/dlpApi.js';
+import api from '../../shared/services/api.js';
+
+// Vite 8 may wrap MUI 5 icon defaults during dependency optimization.
+const ScienceOutlinedIcon = ScienceOutlinedIconModule.default ?? ScienceOutlinedIconModule;
+const SecurityOutlinedIcon = SecurityOutlinedIconModule.default ?? SecurityOutlinedIconModule;
 
 const initialForm = {
   recipient: '',
@@ -33,7 +38,7 @@ const demoScenarios = {
   warning: {
     recipient: 'auditoria@partner.test',
     subject: 'Revision de resultados',
-    body: 'Se requiere revisar el resultado de laboratorio del paciente antes de la reunion.',
+    body: 'Agenda de una reunión administrativa con el socio de laboratorio.',
   },
   blocked: {
     recipient: 'destino.personal@gmail.com',
@@ -56,6 +61,7 @@ function TransfersPage() {
 
   const handleChange = (field) => (event) => {
     setForm((current) => ({ ...current, [field]: event.target.value }));
+    setResult(null);
   };
 
   const loadScenario = (scenario) => {
@@ -80,12 +86,18 @@ function TransfersPage() {
     }
   };
 
+  async function send() {
+    setLoading(true); setError('');
+    try { const response = await api.post('/mail/send', {analysisId:result.id,...form}); setResult({...result,status:response.data.status}); }
+    catch(e) { setError(e.message); } finally { setLoading(false); }
+  }
+
   return (
     <Stack spacing={3}>
       <Box>
         <Typography variant="h1">Analisis de transferencia</Typography>
         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          El contenido se analiza en el backend antes de cualquier envio. En esta beta no se envia correo todavia.
+          El servidor analiza el contenido y autoriza el envío solo con decisión PERMITIR. Los correos se entregan al receptor SMTP local del laboratorio.
         </Typography>
       </Box>
 
@@ -111,7 +123,7 @@ function TransfersPage() {
               <Box>
                 <Typography variant="h2">Nueva transferencia</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Simula el contenido de un correo controlado por MediShield.
+                  Prepara un correo de laboratorio. El contenido completo no se guarda en la base de datos.
                 </Typography>
               </Box>
 
@@ -193,6 +205,9 @@ function TransfersPage() {
                   />
                 </Box>
 
+                {result.decision === 'PERMITIR' && result.status !== 'ENVIADA' && <Button variant="contained" disabled={loading} onClick={send}>Enviar al correo de laboratorio</Button>}
+                {result.status === 'ENVIADA' && <Alert severity="success">SMTP confirmó la entrega al laboratorio.</Alert>}
+                {result.decision !== 'PERMITIR' && <Alert severity="warning">El correo permanece retenido. No hay envío SMTP.</Alert>}
                 <Divider />
 
                 <Grid container spacing={1.5}>
