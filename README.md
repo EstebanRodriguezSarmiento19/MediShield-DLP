@@ -98,3 +98,7 @@ Consulte [`docs/VERIFICACION_6_MODULOS.md`](docs/VERIFICACION_6_MODULOS.md) para
 
 El sistema procesa datos sintéticos. El SMTP local recibe y conserva mensajes en disco sin enviarlos a redes externas. Las pruebas HTTP dirigidas cubren autenticación, autorización, CSRF, IDOR, inyección SQL, manipulación de solicitudes y fuzzing básico. No sustituyen una auditoría externa ni una campaña completa con OWASP ZAP.
 
+
+## Demostración web y colaboración
+
+La preparación de una web pública gratuita con Render y MySQL alojado en Aiven, junto con la edición desde el navegador y la configuración de despliegue automático desde GitHub, se explica en [docs/DESPLIEGUE_GRATUITO.md](docs/DESPLIEGUE_GRATUITO.md). Usa solo datos sintéticos.

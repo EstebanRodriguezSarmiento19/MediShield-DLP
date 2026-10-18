@@ -26,3 +26,6 @@ npm-debug.log*
 .env.lab
 .lab-accounts.json
 .lab-test-accounts.json
+
+# Configuración privada del despliegue
+.env.cloud

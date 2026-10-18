@@ -10,6 +10,7 @@
     "dev": "node --watch src/server.js",
     "test": "node --test test/*.test.js",
     "db:setup": "node scripts/setup-lab.mjs",
+    "db:setup:cloud": "node scripts/setup-cloud.mjs",
     "verify:lab": "node scripts/verify-lab.mjs",
     "smtp:lab": "node scripts/smtp-lab.mjs"
   },

@@ -18,6 +18,7 @@ const pool = mysql.createPool({
   timezone: 'Z',
   connectTimeout: 5000,
   multipleStatements: false,
+  ssl: env.db.sslCaBase64 ? { ca: Buffer.from(env.db.sslCaBase64, 'base64').toString('utf8'), rejectUnauthorized: true } : undefined,
 });
 
 /**

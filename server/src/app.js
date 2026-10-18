@@ -1,4 +1,5 @@
 import express from 'express';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import helmet from 'helmet';
 import {rateLimit} from 'express-rate-limit';
@@ -11,6 +12,7 @@ import authRoutes,{requireAuth,csrf,sameOrigin} from './features/auth/auth.js';
 import securityRoutes from './features/security/security.routes.js';
 import mailRoutes from './features/mail/mail.routes.js';
 const app=express();
+if (env.production) app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({strictTransportSecurity:env.production?undefined:false}));
 app.use(cors({origin:env.clientOrigin,credentials:true}));
@@ -24,6 +26,14 @@ app.use('/api',sameOrigin,requireAuth,csrf);
 app.use('/api/dlp',dlpRoutes);
 app.use('/api/mail',mailRoutes);
 app.use('/api',securityRoutes);
+if (env.production) {
+  const clientDist=fileURLToPath(new URL('../../client/dist/',import.meta.url));
+  app.use(express.static(clientDist,{index:false}));
+  app.get('*',(req,res,next)=>{
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(fileURLToPath(new URL('../../client/dist/index.html',import.meta.url)));
+  });
+}
 app.use(notFound);
 app.use(errorHandler);
 export default app;
