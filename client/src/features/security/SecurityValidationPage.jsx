@@ -28,7 +28,9 @@ export default function SecurityValidationPage(){
  function exportReport(){const payload={project:'MediShield-DLP',generatedAt:new Date().toISOString(),notice:'Estados diligenciados manualmente; adjuntar los reportes originales como evidencia.',summary:counts,tests:items.map(({id,name,category,objective,status,notes,evidence})=>({id,name,category,objective,status,notes,evidence}))};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='medishield-validacion-seguridad.json';a.click();URL.revokeObjectURL(url);}
  return <Stack spacing={3}>
   <Box><Typography variant="h1">Centro de seguridad y validación</Typography><Typography color="text.secondary" sx={{mt:1}}>Plan de evidencia para la sustentación del tercer corte · 2026-2 · MediShield-DLP</Typography></Box>
-  <Alert severity="warning">Este módulo organiza el plan y registra estados manuales en el navegador. No ejecuta escáneres ni certifica que una prueba haya pasado. Marca “Aprobada” solo cuando tengas evidencia reproducible.</Alert>
+<Alert severity="info">
+  Conserva los reportes originales de las herramientas para la sustentación. El seguimiento que hagas aquí se guarda únicamente en tu navegador actual y no se sincroniza con la base de datos.
+</Alert>
   <Grid container spacing={2}>{[['Total de controles',items.length],['Pendientes',counts['Pendiente']],['En progreso',counts['En progreso']],['Aprobadas',counts['Aprobada']]].map(([label,value])=><Grid item xs={6} md={3} key={label}><Card variant="outlined"><CardContent><Typography color="text.secondary" variant="body2">{label}</Typography><Typography variant="h4" sx={{mt:1}}>{value}</Typography></CardContent></Card></Grid>)}</Grid>
   <Card variant="outlined"><CardContent><Typography variant="h2" gutterBottom>Arquitectura que se debe sustentar</Typography><Grid container spacing={2}>{[
    ['Frontend','React + Vite + Material UI','Interfaz, rutas protegidas y llamadas a la API.'],['Backend','Node.js + Express','Autenticación, reglas DLP, validación y endpoints REST.'],['Persistencia','MariaDB/MySQL','Usuarios, reglas, análisis y eventos de auditoría.'],['Correo de laboratorio','SMTP local 127.0.0.1:1025','Captura local de mensajes de prueba; sin retransmisión externa.'],['Telemetría externa','Gophish / Snort','No afirmar integración en vivo hasta que exista conector, configuración y prueba verificable.']].map(([title,tech,desc])=><Grid item xs={12} md={6} key={title}><Box sx={{p:2,border:1,borderColor:'divider',borderRadius:1,height:'100%'}}><Typography fontWeight={700}>{title}</Typography><Typography color="primary.main" sx={{my:.5}}>{tech}</Typography><Typography variant="body2" color="text.secondary">{desc}</Typography></Box></Grid>)}</Grid></CardContent></Card>
@@ -36,6 +38,11 @@ export default function SecurityValidationPage(){
    <Stack spacing={2}>{visible.map(item=><Card variant="outlined" key={item.id}><CardContent><Stack direction={{xs:'column',md:'row'}} spacing={2} justifyContent="space-between"><Box sx={{flex:1}}><Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap"><Typography variant="h6">{item.name}</Typography><Chip size="small" label={item.category}/></Stack><Typography sx={{mt:1}}>{item.objective}</Typography><Typography variant="body2" color="text.secondary" sx={{mt:1}}><b>Evidencia requerida:</b> {item.evidence}</Typography><Divider sx={{my:1.5}}/><Typography variant="body2" sx={{whiteSpace:'pre-wrap'}}><b>Cómo empezar:</b> {item.commands}</Typography></Box><Box sx={{width:{xs:'100%',md:250},flexShrink:0}}><TextField fullWidth select size="small" label="Estado de la prueba" value={item.status} onChange={e=>update(item.id,'status',e.target.value)} sx={{mb:1}}>{statuses.map(s=><MenuItem key={s} value={s}>{s}</MenuItem>)}</TextField><Chip color={colors[item.status]} label={item.status} variant="outlined" sx={{mb:1}}/><TextField fullWidth multiline minRows={3} label="Notas / ubicación de evidencia" placeholder="Ej.: reports/zap-baseline.html, ejecución 2026-10-20..." value={item.notes} onChange={e=>update(item.id,'notes',e.target.value)}/></Box></Stack></CardContent></Card>)}</Stack>
   </Box>
   {message&&<Alert severity="info" onClose={()=>setMessage('')}>{message}</Alert>}
-  <Alert severity="info">Para la sustentación, conserva los reportes originales de las herramientas. Este registro se guarda en el almacenamiento local del navegador y no se sincroniza con MariaDB ni con otros equipos.</Alert>
- </Stack>;
+<Alert severity="warning">
+  Esta pantalla funciona como una bitácora manual, no ejecuta escaneos automáticos. Marca una prueba como "Aprobada" únicamente cuando ya tengas la evidencia que lo respalde.
+</Alert> 
+</Stack>;
 }
+
+
+
