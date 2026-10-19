@@ -1,6 +1,6 @@
 # MediShield DLP
 
-MediShield DLP es un sistema web para prevenir la salida no autorizada de datos clínicos sintéticos. React presenta la interfaz y una API de Node.js toma todas las decisiones de seguridad. MySQL conserva usuarios, sesiones, destinatarios, reglas, transferencias, alertas, historial y auditoría.
+MediShield DLP es un sistema web para prevenir la salida no autorizada de datos clínicos sintéticos. React presenta la interfaz y una API de Node.js toma todas las decisiones de seguridad. MySQL conserva usuarios, sesiones, destinatarios, reglas, transferencias, alertas, historial y auditoría. 
 
 ## Funciones implementadas
 
