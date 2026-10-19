@@ -39,7 +39,7 @@ export default function SecurityValidationPage(){
   </Box>
   {message&&<Alert severity="info" onClose={()=>setMessage('')}>{message}</Alert>}
 <Alert severity="warning">
-  Esta pantalla funciona como una bitácora manual, no ejecuta escaneos automáticos. Marca una prueba como "Aprobada" únicamente cuando ya tengas la evidencia que lo respalde.
+  Esta pantalla funciona como una bitácora manual, no ejecuta escaneos automáticos. Marca una prueba como Aprobada únicamente cuando ya tengas la evidencia que lo respalde.
 </Alert> 
 </Stack>;
 }
