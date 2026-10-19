@@ -8,6 +8,7 @@ import AlertsPage from '../features/alerts/AlertsPage.jsx';
 import AuditPage from '../features/audit/AuditPage.jsx';
 import RecipientsPage from '../features/recipients/RecipientsPage.jsx';
 import RulesPage from '../features/rules/RulesPage.jsx';
+import SecurityValidationPage from '../features/security/SecurityValidationPage.jsx';
 import RouteErrorPage from '../shared/components/RouteErrorPage.jsx';
 export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvider>,errorElement:<RouteErrorPage/>,children:[
  {path:'/login',element:<LoginPage/>},
@@ -16,7 +17,7 @@ export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvid
   {path:'dashboard',element:<DashboardPage/>},{path:'recipients',element:<RecipientsPage/>},
   {element:<ProtectedRoute roles={['admin','usuario']}/>,children:[{path:'transfers',element:<TransfersPage/>}]},
   {element:<ProtectedRoute roles={['admin','analista']}/>,children:[
-   {path:'alerts',element:<AlertsPage/>},{path:'audit',element:<AuditPage/>},{path:'rules',element:<RulesPage/>}
+   {path:'alerts',element:<AlertsPage/>},{path:'audit',element:<AuditPage/>},{path:'rules',element:<RulesPage/>},{path:'security-validation',element:<SecurityValidationPage/>}
   ]}
  ]}]},
  {path:'*',element:<Navigate to="/dashboard" replace/>}
