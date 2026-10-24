@@ -13,6 +13,7 @@ async function getHealth(req, res) {
     data: {
       status: 'ok',
       database: isDatabaseConnected ? 'connected' : 'disconnected',
+      ...(process.env.RENDER_GIT_COMMIT ? { commit: process.env.RENDER_GIT_COMMIT } : {}),
     },
   });
 }
