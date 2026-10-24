@@ -12,18 +12,18 @@ const cx=await mysql.createConnection({host:config.DB_HOST||'localhost',port:Num
 try {
  await cx.query('CREATE DATABASE IF NOT EXISTS '+mysql.escapeId(dbName)+' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
  await cx.changeUser({database:dbName});
- const schema=await fs.readFile(new URL('../../database/schema.sql',import.meta.url),'utf8');
- const migration=await fs.readFile(new URL('../../database/migrations/002_modules.sql',import.meta.url),'utf8');
- for(const source of [schema,migration]) {
+ const databaseDir=new URL('../../database/',import.meta.url);
+ const migrationNames=(await fs.readdir(new URL('migrations/',databaseDir)))
+  .filter(filename=>/^\d{3}_[A-Za-z0-9_-]+\.sql$/.test(filename)).sort();
+ for(const url of [new URL('schema.sql',databaseDir),
+   ...migrationNames.map(filename=>new URL(`migrations/${filename}`,databaseDir))]) {
+  const source=await fs.readFile(url,'utf8');
   for(const statement of source.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean)) {
    if(/^(CREATE DATABASE|USE )/i.test(statement)) continue;
    await cx.query(statement);
   }
  }
  for(const [id,weight] of [['DLP-001',35],['DLP-002',50],['DLP-003',25]]) await cx.execute('INSERT IGNORE INTO regla_dlp (id,peso) VALUES (?,?)',[id,weight]);
- for(const [address,name,allowed] of [['laboratorio@hospital.local','Laboratorio interno',true],['especialista@hospital.local','Especialista interno',true],['auditoria@partner.test','Socio de laboratorio',true],['bloqueado@externo.test','Destino revocado',false]]) {
-  await cx.execute('INSERT IGNORE INTO destinatario (correo,nombre,autorizado) VALUES (?,?,?)',[address,name,allowed]);
- }
  const credentialsPath=dir+'.lab-accounts.json';
  let accounts;
  try {accounts=JSON.parse(await fs.readFile(credentialsPath,'utf8'));}

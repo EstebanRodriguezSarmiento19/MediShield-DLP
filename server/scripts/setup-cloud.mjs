@@ -34,7 +34,11 @@ const cx = await mysql.createConnection({
 try {
   await cx.query('CREATE DATABASE IF NOT EXISTS ' + mysql.escapeId(name) + ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
   await cx.changeUser({ database: name });
-  for (const url of [new URL('../../database/schema.sql', import.meta.url), new URL('../../database/migrations/002_modules.sql', import.meta.url)]) {
+  const databaseDir = new URL('../../database/', import.meta.url);
+  const migrationNames = (await fs.readdir(new URL('migrations/', databaseDir)))
+    .filter(filename => /^\d{3}_[A-Za-z0-9_-]+\.sql$/.test(filename)).sort();
+  for (const url of [new URL('schema.sql', databaseDir),
+    ...migrationNames.map(filename => new URL(`migrations/${filename}`, databaseDir))]) {
     const sql = await fs.readFile(url, 'utf8');
     for (const statement of sql.replace(/^--.*$/gm, '').split(';').map(x => x.trim()).filter(Boolean)) {
       if (/^(CREATE DATABASE|USE )/i.test(statement)) continue;

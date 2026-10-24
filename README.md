@@ -94,6 +94,9 @@ Resultados verificados el 1 de octubre de 2026:
 
 Consulte [`docs/VERIFICACION_6_MODULOS.md`](docs/VERIFICACION_6_MODULOS.md) para repetir la demostración y relacionar cada módulo con sus pruebas. Abra `evidence/index.html` para navegar el paquete de evidencia.
 
+Para sincronizar cambios de estructura y configuración entre MySQL local,
+Aiven y Render, consulte [`docs/DESPLIEGUE_Y_MIGRACIONES.md`](docs/DESPLIEGUE_Y_MIGRACIONES.md).
+
 ## Alcance del laboratorio
 
 El sistema procesa datos sintéticos. El SMTP local recibe y conserva mensajes en disco sin enviarlos a redes externas. Las pruebas HTTP dirigidas cubren autenticación, autorización, CSRF, IDOR, inyección SQL, manipulación de solicitudes y fuzzing básico. No sustituyen una auditoría externa ni una campaña completa con OWASP ZAP.
