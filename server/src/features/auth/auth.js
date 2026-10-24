@@ -2,9 +2,9 @@ import { Router } from 'express';
 import crypto from 'node:crypto';
 import pool, { transaction } from '../../db/pool.js';
 import env from '../../config/env.js';
-import { verifyPassword } from './password.js';
+import { hashPassword, verifyPassword } from './password.js';
 import { appendAudit, recordAudit } from '../audit/audit.service.js';
-import { object, email, fail } from '../../shared/validation.js';
+import { object, email, text, fail } from '../../shared/validation.js';
 import asyncHandler from '../../shared/utils/asyncHandler.js';
 export const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
 export const cookieName = 'medishield_session';
@@ -50,6 +50,23 @@ async function consumeLogin(address, ip) {
     return true;
   });
 }
+async function consumeRegister(ip) {
+  return transaction(async cx => {
+    const bucket = hashToken(`register:ip:${ip}`);
+    await cx.execute(`INSERT INTO auth_attempt(bucket,window_start,attempts) VALUES (?,UTC_TIMESTAMP(3),1)
+      ON DUPLICATE KEY UPDATE attempts=IF(window_start < DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),1,attempts+1),
+      window_start=IF(window_start < DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),UTC_TIMESTAMP(3),window_start)`,[bucket]);
+    const [[row]] = await cx.execute('SELECT attempts FROM auth_attempt WHERE bucket=?',[bucket]);
+    if (row.attempts > 10) { await appendAudit(cx,{action:'REGISTER_THROTTLED',outcome:'DENIED',ip}); return false; }
+    return true;
+  });
+}
+async function openSession(cx, userId) {
+  const token = crypto.randomBytes(32).toString('hex'), csrfToken = crypto.randomBytes(32).toString('hex');
+  await cx.execute('DELETE FROM sesion_web WHERE fecha_expiracion<UTC_TIMESTAMP(3)');
+  await cx.execute(`INSERT INTO sesion_web VALUES (?,?,?,UTC_TIMESTAMP(3),DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 8 HOUR),UTC_TIMESTAMP(3))`,[hashToken(token),userId,csrfToken]);
+  return { token, csrfToken };
+}
 const router=Router();
 router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
   object(req.body,['email','password']);
@@ -62,15 +79,41 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
     await recordAudit({action:'LOGIN_FAILED',outcome:'DENIED',ip:req.ip,details:{accountHash:hashToken(address)}});
     fail('Credenciales inválidas.',401);
   }
-  const token=crypto.randomBytes(32).toString('hex'), csrfToken=crypto.randomBytes(32).toString('hex');
+  let session;
   await transaction(async cx=>{
     await cx.execute('UPDATE auth_attempt SET attempts=0 WHERE bucket=?',[hashToken('email:'+address)]);
-    await cx.execute('DELETE FROM sesion_web WHERE fecha_expiracion<UTC_TIMESTAMP(3)');
-    await cx.execute(`INSERT INTO sesion_web VALUES (?,?,?,UTC_TIMESTAMP(3),DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 8 HOUR),UTC_TIMESTAMP(3))`,[hashToken(token),user.id_usuario,csrfToken]);
+    session=await openSession(cx,user.id_usuario);
     await appendAudit(cx,{actor:user.id_usuario,action:'LOGIN_SUCCESS',ip:req.ip});
   });
-  res.cookie(cookieName,token,{...cookieOptions,maxAge:8*3600*1000});
-  res.json({success:true,data:{user:publicUser(user),csrfToken}});
+  res.cookie(cookieName,session.token,{...cookieOptions,maxAge:8*3600*1000});
+  res.json({success:true,data:{user:publicUser(user),csrfToken:session.csrfToken}});
+}));
+router.post('/register',sameOrigin,asyncHandler(async(req,res) => {
+  object(req.body,['name','email','password']);
+  const name=text(req.body.name,'Nombre',150), address=email(req.body.email), password=req.body.password;
+  if (name.length<2) fail('Nombre: debe tener al menos 2 caracteres.');
+  if (address.length>150) fail('Correo inválido.');
+  if (typeof password!=='string' || password.length<15 || password.length>128) fail('La contraseña debe tener entre 15 y 128 caracteres.');
+  if (!await consumeRegister(req.ip)) { res.set('Retry-After','900'); fail('Demasiados intentos. Espera 15 minutos.',429); }
+  const clave=await hashPassword(password);
+  let user, session;
+  try {
+    await transaction(async cx=>{
+      // El rol siempre es 'usuario': nunca se acepta del cliente.
+      const [result]=await cx.execute("INSERT INTO usuario(nombre,correo,clave_hash,rol,estado) VALUES (?,?,?,'usuario','activo')",[name,address,clave]);
+      user={id_usuario:result.insertId,nombre:name,correo:address,rol:'usuario'};
+      session=await openSession(cx,user.id_usuario);
+      await appendAudit(cx,{actor:user.id_usuario,action:'USER_REGISTERED',resource:'usuario',ip:req.ip});
+    });
+  } catch (err) {
+    if (err?.code==='ER_DUP_ENTRY') {
+      await recordAudit({action:'REGISTER_FAILED',outcome:'DENIED',ip:req.ip,details:{accountHash:hashToken(address)}});
+      fail('No se pudo completar el registro. Si ya tienes cuenta, inicia sesión.',409);
+    }
+    throw err;
+  }
+  res.cookie(cookieName,session.token,{...cookieOptions,maxAge:8*3600*1000});
+  res.status(201).json({success:true,data:{user:publicUser(user),csrfToken:session.csrfToken}});
 }));
 router.get('/me',requireAuth,(req,res)=>res.json({success:true,data:{user:req.user,csrfToken:req.session.csrf_token}}));
 router.post('/logout',sameOrigin,requireAuth,csrf,asyncHandler(async(req,res)=>{

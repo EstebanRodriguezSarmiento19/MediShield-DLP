@@ -1,6 +1,6 @@
 import {useState} from 'react';
-import {Alert,Box,Button,Paper,Stack,TextField,Typography} from '@mui/material';
-import {Navigate} from 'react-router-dom';
+import {Alert,Box,Button,Link,Paper,Stack,TextField,Typography} from '@mui/material';
+import {Link as RouterLink,Navigate} from 'react-router-dom';
 import {useAuth} from './AuthContext.jsx';
 export default function LoginPage() {
  const {user,login}=useAuth();
@@ -17,6 +17,7 @@ export default function LoginPage() {
     {error&&<Alert severity="error">{error}</Alert>}
     <Button type="submit" variant="contained" disabled={busy}>{busy?'Verificando…':'Iniciar sesión'}</Button>
    </Stack>
+   <Typography variant="body2" sx={{mt:2,textAlign:'center'}}>¿No tienes cuenta? <Link component={RouterLink} to="/register">Regístrate</Link></Typography>
   </Paper>
  </Box>;
 }
