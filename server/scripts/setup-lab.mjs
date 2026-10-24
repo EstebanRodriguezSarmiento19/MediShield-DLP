@@ -45,7 +45,7 @@ try {
   if(error.code!=='ENOENT') throw error;
   const user='mdl_'+crypto.randomBytes(5).toString('hex'),password=crypto.randomBytes(24).toString('hex');
   await cx.query('CREATE USER ?@? IDENTIFIED BY ?',[user,'localhost',password]);
-  const tables={usuario:'SELECT',sesion_web:'SELECT, INSERT, UPDATE, DELETE',auth_attempt:'SELECT, INSERT, UPDATE',
+  const tables={usuario:'SELECT, INSERT',sesion_web:'SELECT, INSERT, UPDATE, DELETE',auth_attempt:'SELECT, INSERT, UPDATE',
     destinatario:'SELECT, INSERT, UPDATE',regla_dlp:'SELECT, UPDATE',transferencia:'SELECT, INSERT, UPDATE',
     alerta:'SELECT, INSERT, UPDATE',historial_comunicacion:'SELECT, INSERT, UPDATE',audit_head:'SELECT, UPDATE',audit_event:'SELECT, INSERT'};
   for(const [table,privileges] of Object.entries(tables)) await cx.query('GRANT '+privileges+' ON '+mysql.escapeId(dbName)+'.'+mysql.escapeId(table)+' TO ?@?',[user,'localhost']);

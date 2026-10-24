@@ -56,7 +56,7 @@ try {
   }
   await cx.query('CREATE USER IF NOT EXISTS ?@? IDENTIFIED BY ?', [appUser, '%', appPassword]);
   const tables = {
-    usuario: 'SELECT', sesion_web: 'SELECT, INSERT, UPDATE, DELETE',
+    usuario: 'SELECT, INSERT', sesion_web: 'SELECT, INSERT, UPDATE, DELETE',
     auth_attempt: 'SELECT, INSERT, UPDATE', destinatario: 'SELECT, INSERT, UPDATE',
     regla_dlp: 'SELECT, UPDATE', transferencia: 'SELECT, INSERT, UPDATE',
     alerta: 'SELECT, INSERT, UPDATE', historial_comunicacion: 'SELECT, INSERT, UPDATE',

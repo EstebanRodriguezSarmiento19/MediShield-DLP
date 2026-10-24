@@ -1,6 +1,7 @@
 import {createBrowserRouter,Navigate,Outlet} from 'react-router-dom';
 import MainLayout from '../shared/components/layout/MainLayout.jsx';
 import LoginPage from '../features/auth/LoginPage.jsx';
+import RegisterPage from '../features/auth/RegisterPage.jsx';
 import {AuthProvider,ProtectedRoute} from '../features/auth/AuthContext.jsx';
 import DashboardPage from '../features/dashboard/DashboardPage.jsx';
 import TransfersPage from '../features/transfers/TransfersPage.jsx';
@@ -12,6 +13,7 @@ import SecurityValidationPage from '../features/security/SecurityValidationPage.
 import RouteErrorPage from '../shared/components/RouteErrorPage.jsx';
 export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvider>,errorElement:<RouteErrorPage/>,children:[
  {path:'/login',element:<LoginPage/>},
+ {path:'/register',element:<RegisterPage/>},
  {element:<ProtectedRoute/>,children:[{path:'/',element:<MainLayout/>,children:[
   {index:true,element:<Navigate to="/dashboard" replace/>},
   {path:'dashboard',element:<DashboardPage/>},{path:'recipients',element:<RecipientsPage/>},
