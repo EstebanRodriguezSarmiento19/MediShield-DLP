@@ -51,4 +51,5 @@ jobs:
           DB_PASSWORD: ${{ secrets.AIVEN_DB_PASSWORD }}
           DB_NAME: ${{ secrets.AIVEN_DB_NAME }}
           DB_SSL_CA_BASE64: ${{ secrets.AIVEN_DB_SSL_CA_BASE64 }}
+          APP_DB_USER: medishield_app
         run: npm run db:migrate:cloud --prefix server

@@ -46,6 +46,11 @@ terminen correctamente. Si una migración falla, el despliegue se detiene.
 El plan Free puede dormir el servicio por inactividad. Antes de una presentación,
 abrir la web, esperar a que despierte y comprobar `/api/health`.
 
+El registro público crea cuentas con rol `usuario`. El job de migraciones otorga
+al usuario SQL `medishield_app` únicamente `SELECT` e `INSERT` sobre la tabla
+`usuario`, de modo que el registro funcione al desplegar el código. Si cambia
+el nombre de esa cuenta SQL, actualice `APP_DB_USER` en el workflow.
+
 ## Prueba del caso «Seguro»
 
 La migración `003_demo_recipients.sql` añade los destinatarios sintéticos

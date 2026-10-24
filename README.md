@@ -37,6 +37,28 @@ npm install
 
 `npm run db:setup` crea o actualiza el esquema, carga datos sintéticos, genera cuentas de laboratorio y crea una cuenta SQL con privilegios mínimos. Las contraseñas quedan únicamente en `server/.lab-accounts.json`. La configuración privada queda en `server/.env.lab`. Ambos archivos están excluidos de Git.
 
+## Crear cuentas
+
+Para una cuenta común, abre `/register` en la web publicada, elige nombre,
+correo y contraseña. El servidor crea la cuenta en Aiven con rol `usuario`.
+
+Para crear una cuenta desde MySQL Workbench o asignar el rol `analista`, conecta
+Workbench a Aiven con un usuario SQL que pueda insertar en `medishield.usuario`
+y genera la sentencia desde el repositorio:
+
+```powershell
+cd server
+npm ci
+npm run user:sql -- --email persona@ejemplo.com --name "Persona" --role usuario
+```
+
+El comando pide la contraseña dos veces sin mostrarla (15 a 128 caracteres) e
+imprime un `INSERT` con el hash `scrypt` requerido por MediShield. Copia esa
+sentencia al editor SQL de Workbench y ejecútala. `--role` admite `usuario` o
+`analista`. No escribas la contraseña en SQL ni compartas la sentencia generada:
+el hash también es información sensible. La cuenta aparece de inmediato en la
+web publicada porque Render utiliza la misma base de Aiven.
+
 ## Ejecución
 
 Abra tres terminales en la raíz del proyecto.

@@ -7,11 +7,12 @@ import mysql from 'mysql2/promise';
 // En local lee .env.cloud; en CI usa exclusivamente las variables protegidas.
 dotenv.config({ path: fileURLToPath(new URL('../.env.cloud', import.meta.url)) });
 
-const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'DB_SSL_CA_BASE64'];
+const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'DB_SSL_CA_BASE64', 'APP_DB_USER'];
 for (const key of required) {
   if (!process.env[key]) throw new Error(`Falta ${key} para aplicar migraciones.`);
 }
 if (!/^[A-Za-z0-9_]+$/.test(process.env.DB_NAME)) throw new Error('DB_NAME inválido.');
+if (!/^[A-Za-z0-9_]+$/.test(process.env.APP_DB_USER)) throw new Error('APP_DB_USER inválido.');
 const port = Number(process.env.DB_PORT);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('DB_PORT inválido.');
 const ca = Buffer.from(process.env.DB_SSL_CA_BASE64, 'base64').toString('utf8');
@@ -69,6 +70,11 @@ try {
       [filename, checksum]);
     console.log(`Aplicada: ${filename}`);
   }
+
+  // El registro web solo necesita consultar e insertar usuarios; nunca editarlos.
+  await cx.query(`GRANT SELECT, INSERT ON ${mysql.escapeId(process.env.DB_NAME)}.${mysql.escapeId('usuario')} TO ?@?`,
+    [process.env.APP_DB_USER, '%']);
+  console.log('Permisos de registro de usuarios actualizados.');
 } finally {
   await cx.end();
 }

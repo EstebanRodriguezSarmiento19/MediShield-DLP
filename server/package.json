@@ -12,6 +12,8 @@
     "db:setup": "node scripts/setup-lab.mjs",
     "db:setup:cloud": "node scripts/setup-cloud.mjs",
     "db:migrate:cloud": "node scripts/migrate-cloud.mjs",
+    "user:create:cloud": "node scripts/create-cloud-user.mjs",
+    "user:sql": "node scripts/print-user-sql.mjs",
     "verify:lab": "node scripts/verify-lab.mjs",
     "smtp:lab": "node scripts/smtp-lab.mjs"
   },
