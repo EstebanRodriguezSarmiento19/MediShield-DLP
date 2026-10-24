@@ -42,12 +42,20 @@ try {
 
   for (const filename of files) {
     const sql = await fs.readFile(new URL(filename, databaseDir), 'utf8');
-    const checksum = crypto.createHash('sha256').update(sql).digest('hex');
+    // Git puede entregar LF en Linux y CRLF en Windows: son la misma migración.
+    const normalizedSql = sql.replace(/\r\n/g, '\n');
+    const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+    const checksum = hash(normalizedSql);
+    const windowsChecksum = hash(normalizedSql.replace(/\n/g, '\r\n'));
     const [[applied]] = await cx.execute(
       'SELECT checksum FROM schema_migration WHERE filename=?', [filename]);
     if (applied) {
       if (applied.checksum !== checksum) {
-        throw new Error(`La migración ${filename} ya se aplicó con otro contenido. Crea una nueva migración.`);
+        if (applied.checksum !== windowsChecksum) {
+          throw new Error(`La migración ${filename} ya se aplicó con otro contenido. Crea una nueva migración.`);
+        }
+        await cx.execute('UPDATE schema_migration SET checksum=? WHERE filename=? AND checksum=?',
+          [checksum, filename, windowsChecksum]);
       }
       console.log(`Ya aplicada: ${filename}`);
       continue;
