@@ -6,6 +6,8 @@ MediShield DLP es un sistema web para prevenir la salida no autorizada de datos 
 
 - Autenticación real con contraseñas derivadas mediante `scrypt`, sesiones aleatorias almacenadas en MySQL, cookie `HttpOnly` con `SameSite=Strict`, protección CSRF, validación de origen y límite persistente de intentos.
 - Roles `admin`, `analista` y `usuario`, aplicados en el servidor.
+- Gestión de cuentas desde la web: invitaciones, cambios de correo y rol, permiso independiente para gestionar cuentas, desactivación y reactivación. Las sesiones se revocan al cambiar acceso.
+- Recuperación de contraseñas mediante correo HTTPS, enlace de 15 minutos y uso único. El servidor almacena solo el hash del token y cierra las sesiones anteriores tras restablecer la clave.
 - Motor DLP que normaliza y valida la entrada, identifica patrones sensibles y decide `PERMITIR`, `ALERTAR` o `BLOQUEAR`.
 - Catálogo persistente de destinatarios autorizados o revocados, con control de versión.
 - Historial remitente-destinatario calculado únicamente a partir de entregas SMTP confirmadas.
@@ -37,27 +39,24 @@ npm install
 
 `npm run db:setup` crea o actualiza el esquema, carga datos sintéticos, genera cuentas de laboratorio y crea una cuenta SQL con privilegios mínimos. Las contraseñas quedan únicamente en `server/.lab-accounts.json`. La configuración privada queda en `server/.env.lab`. Ambos archivos están excluidos de Git.
 
-## Crear cuentas
+## Crear y administrar cuentas
 
-Para una cuenta común, abre `/register` en la web publicada, elige nombre,
-correo y contraseña. El servidor crea la cuenta en Aiven con rol `usuario`.
+En la web publicada, un administrador abre **Cuentas**. Puede crear una cuenta
+con rol `usuario`, `analista` o `admin` y conceder por separado el permiso
+«Puede gestionar cuentas». La aplicación envía una invitación al correo real de
+la persona. Ella elige su contraseña; nadie tiene que conocerla ni escribirla
+en Workbench. También se pueden modificar el nombre, correo y permisos,
+desactivar una cuenta y reactivarla. Cambiar el correo invalida la contraseña
+anterior y envía una invitación al nuevo correo. Desactivar conserva la fila y
+el historial para que la auditoría siga siendo verificable.
 
-Para crear una cuenta desde MySQL Workbench o asignar el rol `analista`, conecta
-Workbench a Aiven con un usuario SQL que pueda insertar en `medishield.usuario`
-y genera la sentencia desde el repositorio:
+El registro público permanece disponible solo en el laboratorio local. En
+producción está desactivado por defecto; se puede habilitar expresamente con
+`ALLOW_PUBLIC_REGISTRATION=true` si el proyecto requiere altas abiertas.
 
-```powershell
-cd server
-npm ci
-npm run user:sql -- --email persona@ejemplo.com --name "Persona" --role usuario
-```
-
-El comando pide la contraseña dos veces sin mostrarla (15 a 128 caracteres) e
-imprime un `INSERT` con el hash `scrypt` requerido por MediShield. Copia esa
-sentencia al editor SQL de Workbench y ejecútala. `--role` admite `usuario` o
-`analista`. No escribas la contraseña en SQL ni compartas la sentencia generada:
-el hash también es información sensible. La cuenta aparece de inmediato en la
-web publicada porque Render utiliza la misma base de Aiven.
+Para «Olvidé mi contraseña», configura un remitente verificado y una clave de
+API de Brevo en Render. Consulta
+[`docs/CUENTAS_Y_RECUPERACION.md`](docs/CUENTAS_Y_RECUPERACION.md).
 
 ## Ejecución
 
@@ -93,6 +92,7 @@ Pruebas unitarias del motor:
 ```powershell
 cd server
 npm test
+npm run verify:accounts:lab
 ```
 
 Verificación integral aislada:

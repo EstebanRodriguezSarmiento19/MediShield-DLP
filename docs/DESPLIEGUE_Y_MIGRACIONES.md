@@ -46,10 +46,12 @@ terminen correctamente. Si una migración falla, el despliegue se detiene.
 El plan Free puede dormir el servicio por inactividad. Antes de una presentación,
 abrir la web, esperar a que despierte y comprobar `/api/health`.
 
-El registro público crea cuentas con rol `usuario`. El job de migraciones otorga
-al usuario SQL `medishield_app` únicamente `SELECT` e `INSERT` sobre la tabla
-`usuario`, de modo que el registro funcione al desplegar el código. Si cambia
-el nombre de esa cuenta SQL, actualice `APP_DB_USER` en el workflow.
+El registro público está desactivado por defecto en producción. El job de
+migraciones otorga a `medishield_app` permisos limitados para crear y actualizar
+`usuario`, gestionar `gestor_usuarios` y `recuperacion_clave`; no permite borrar
+usuarios ni modificar eventos de auditoría. Si cambia el nombre de esa cuenta
+SQL, actualice `APP_DB_USER` en el workflow. Las altas, roles y contraseñas de
+personas son datos operativos de Aiven y no se copian desde MySQL local.
 
 ## Prueba del caso «Seguro»
 

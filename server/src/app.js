@@ -11,10 +11,11 @@ import dlpRoutes from './features/dlp/dlp.routes.js';
 import authRoutes,{requireAuth,csrf,sameOrigin} from './features/auth/auth.js';
 import securityRoutes from './features/security/security.routes.js';
 import mailRoutes from './features/mail/mail.routes.js';
+import usersRoutes from './features/users/users.routes.js';
 const app=express();
 if (env.production) app.set('trust proxy', 1);
 app.disable('x-powered-by');
-app.use(helmet({strictTransportSecurity:env.production?undefined:false}));
+app.use(helmet({strictTransportSecurity:env.production?undefined:false,referrerPolicy:{policy:'no-referrer'}}));
 app.use(cors({origin:env.clientOrigin,credentials:true}));
 app.use((req,res,next)=>{res.set('Cache-Control','no-store'); next();});
 app.use('/api',rateLimit({windowMs:60000,limit:180,standardHeaders:'draft-7',legacyHeaders:false,
@@ -25,6 +26,7 @@ app.use('/api/auth',authRoutes);
 app.use('/api',sameOrigin,requireAuth,csrf);
 app.use('/api/dlp',dlpRoutes);
 app.use('/api/mail',mailRoutes);
+app.use('/api/users',usersRoutes);
 app.use('/api',securityRoutes);
 if (env.production) {
   const clientDist=fileURLToPath(new URL('../../client/dist/',import.meta.url));

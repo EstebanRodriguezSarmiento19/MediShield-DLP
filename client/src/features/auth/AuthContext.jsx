@@ -14,11 +14,12 @@ export function AuthProvider({children}) {
  return <Context.Provider value={{user,loading,error,login,register,logout}}>{children}</Context.Provider>;
 }
 export const useAuth=()=>useContext(Context);
-export function ProtectedRoute({roles}) {
+export function ProtectedRoute({roles,manageUsers}) {
  const {user,loading,error}=useAuth();
  if(loading)return <Box sx={{p:5}}><CircularProgress aria-label="Comprobando sesión"/></Box>;
  if(error)return <Alert severity="error">{error}</Alert>;
  if(!user)return <Navigate to="/login" replace/>;
  if(roles&&!roles.includes(user.role))return <Alert severity="error">Tu rol no tiene acceso a esta página.</Alert>;
+ if(manageUsers&&!user.canManageUsers)return <Alert severity="error">No tienes permiso para gestionar cuentas.</Alert>;
  return <Outlet/>;
 }

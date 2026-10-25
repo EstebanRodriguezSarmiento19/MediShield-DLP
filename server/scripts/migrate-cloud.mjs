@@ -71,10 +71,16 @@ try {
     console.log(`Aplicada: ${filename}`);
   }
 
-  // El registro web solo necesita consultar e insertar usuarios; nunca editarlos.
-  await cx.query(`GRANT SELECT, INSERT ON ${mysql.escapeId(process.env.DB_NAME)}.${mysql.escapeId('usuario')} TO ?@?`,
-    [process.env.APP_DB_USER, '%']);
-  console.log('Permisos de registro de usuarios actualizados.');
+  const grants = {
+    usuario: 'SELECT, INSERT, UPDATE',
+    gestor_usuarios: 'SELECT, INSERT, DELETE',
+    recuperacion_clave: 'SELECT, INSERT, UPDATE, DELETE',
+  };
+  for (const [table, privileges] of Object.entries(grants)) {
+    await cx.query(`GRANT ${privileges} ON ${mysql.escapeId(process.env.DB_NAME)}.${mysql.escapeId(table)} TO ?@?`,
+      [process.env.APP_DB_USER, '%']);
+  }
+  console.log('Permisos de gestión de cuentas actualizados.');
 } finally {
   await cx.end();
 }

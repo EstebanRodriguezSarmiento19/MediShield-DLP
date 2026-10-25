@@ -2,6 +2,9 @@ import {createBrowserRouter,Navigate,Outlet} from 'react-router-dom';
 import MainLayout from '../shared/components/layout/MainLayout.jsx';
 import LoginPage from '../features/auth/LoginPage.jsx';
 import RegisterPage from '../features/auth/RegisterPage.jsx';
+import ForgotPasswordPage from '../features/auth/ForgotPasswordPage.jsx';
+import ResetPasswordPage from '../features/auth/ResetPasswordPage.jsx';
+import UsersPage from '../features/users/UsersPage.jsx';
 import {AuthProvider,ProtectedRoute} from '../features/auth/AuthContext.jsx';
 import DashboardPage from '../features/dashboard/DashboardPage.jsx';
 import TransfersPage from '../features/transfers/TransfersPage.jsx';
@@ -14,9 +17,12 @@ import RouteErrorPage from '../shared/components/RouteErrorPage.jsx';
 export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvider>,errorElement:<RouteErrorPage/>,children:[
  {path:'/login',element:<LoginPage/>},
  {path:'/register',element:<RegisterPage/>},
+ {path:'/forgot-password',element:<ForgotPasswordPage/>},
+ {path:'/reset-password',element:<ResetPasswordPage/>},
  {element:<ProtectedRoute/>,children:[{path:'/',element:<MainLayout/>,children:[
   {index:true,element:<Navigate to="/dashboard" replace/>},
   {path:'dashboard',element:<DashboardPage/>},{path:'recipients',element:<RecipientsPage/>},
+  {element:<ProtectedRoute manageUsers/>,children:[{path:'users',element:<UsersPage/>}]},
   {element:<ProtectedRoute roles={['admin','usuario']}/>,children:[{path:'transfers',element:<TransfersPage/>}]},
   {element:<ProtectedRoute roles={['admin','analista']}/>,children:[
    {path:'alerts',element:<AlertsPage/>},{path:'audit',element:<AuditPage/>},{path:'rules',element:<RulesPage/>},{path:'security-validation',element:<SecurityValidationPage/>}

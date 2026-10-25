@@ -1,10 +1,13 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Alert,Box,Button,Link,Paper,Stack,TextField,Typography} from '@mui/material';
 import {Link as RouterLink,Navigate} from 'react-router-dom';
 import {useAuth} from './AuthContext.jsx';
+import api from '../../shared/services/api.js';
 export default function LoginPage() {
  const {user,login}=useAuth();
  const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [allowRegistration,setAllowRegistration]=useState(false);
+ useEffect(()=>{api.get('/auth/config').then(response=>setAllowRegistration(response.data.allowPublicRegistration)).catch(()=>{});},[]);
  if(user)return <Navigate to="/dashboard" replace/>;
  async function submit(e){e.preventDefault();setError('');setBusy(true);try{await login(email,password);}catch(e){setError(e.message);}finally{setBusy(false);}}
  return <Box sx={{minHeight:'100vh',display:'grid',placeItems:'center',p:2}}>
@@ -17,7 +20,8 @@ export default function LoginPage() {
     {error&&<Alert severity="error">{error}</Alert>}
     <Button type="submit" variant="contained" disabled={busy}>{busy?'Verificando…':'Iniciar sesión'}</Button>
    </Stack>
-   <Typography variant="body2" sx={{mt:2,textAlign:'center'}}>¿No tienes cuenta? <Link component={RouterLink} to="/register">Regístrate</Link></Typography>
+   <Typography variant="body2" sx={{mt:2,textAlign:'center'}}><Link component={RouterLink} to="/forgot-password">¿Olvidaste tu contraseña?</Link></Typography>
+   {allowRegistration&&<Typography variant="body2" sx={{mt:2,textAlign:'center'}}>¿No tienes cuenta? <Link component={RouterLink} to="/register">Regístrate</Link></Typography>}
   </Paper>
  </Box>;
 }
