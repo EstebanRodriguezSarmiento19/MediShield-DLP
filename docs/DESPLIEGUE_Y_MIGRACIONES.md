@@ -17,6 +17,13 @@ Los registros de actividad (usuarios, sesiones, análisis, alertas y auditoría)
 permanecen en la base donde se originaron. No se copian desde MySQL local a
 Aiven al publicar código.
 
+No conecte servidores locales a Aiven con un `AUDIT_HMAC_KEY` distinto al de
+Render. Las entradas que escriban quedarán enlazadas, pero no podrán
+verificarse con una sola clave. Para desarrollo utilice MySQL local; si un
+equipo comparte Aiven, todos los procesos que escriben auditoría deben usar
+la misma clave de producción gestionada como secreto. Nunca reescriba eventos
+históricos para ocultar un fallo de verificación.
+
 ## Primera configuración en GitHub y Render
 
 En GitHub, configurar los siguientes secretos de Actions en
