@@ -48,4 +48,11 @@ test('cadena HMAC detecta modificación, eliminación, reordenamiento y truncami
  assert.equal(verifyRows(rows,head,key).valid,true);
  const altered=structuredClone(rows);altered[1].payload='{}';
  for(const variant of [altered,[rows[0],rows[2]],[rows[1],rows[0],rows[2]],rows.slice(0,2)]) assert.equal(verifyRows(variant,head,key).valid,false);
+  const mixed=structuredClone(rows);
+  mixed[1].event_hash=eventHash(mixed[1].previous_hash,mixed[1].payload,'b'.repeat(64));
+  mixed[2].previous_hash=mixed[1].event_hash;
+  mixed[2].event_hash=eventHash(mixed[2].previous_hash,mixed[2].payload,key);
+  const report=verifyRows(mixed,{sequence_no:3,event_hash:mixed[2].event_hash},key);
+  assert.deepEqual(report.invalidHmacAt,[2]);
+  assert.deepEqual(report.brokenLinksAt,[]);
 });
