@@ -75,6 +75,7 @@ try {
     usuario: 'SELECT, INSERT, UPDATE',
     gestor_usuarios: 'SELECT, INSERT, DELETE',
     recuperacion_clave: 'SELECT, INSERT, UPDATE, DELETE',
+    registro_pendiente: 'SELECT, INSERT, UPDATE, DELETE',
   };
   for (const [table, privileges] of Object.entries(grants)) {
     await cx.query(`GRANT ${privileges} ON ${mysql.escapeId(process.env.DB_NAME)}.${mysql.escapeId(table)} TO ?@?`,

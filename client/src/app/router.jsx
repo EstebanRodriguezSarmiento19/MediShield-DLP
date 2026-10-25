@@ -2,6 +2,7 @@ import {createBrowserRouter,Navigate,Outlet} from 'react-router-dom';
 import MainLayout from '../shared/components/layout/MainLayout.jsx';
 import LoginPage from '../features/auth/LoginPage.jsx';
 import RegisterPage from '../features/auth/RegisterPage.jsx';
+import ConfirmRegistrationPage from '../features/auth/ConfirmRegistrationPage.jsx';
 import ForgotPasswordPage from '../features/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from '../features/auth/ResetPasswordPage.jsx';
 import UsersPage from '../features/users/UsersPage.jsx';
@@ -17,6 +18,7 @@ import RouteErrorPage from '../shared/components/RouteErrorPage.jsx';
 export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvider>,errorElement:<RouteErrorPage/>,children:[
  {path:'/login',element:<LoginPage/>},
  {path:'/register',element:<RegisterPage/>},
+ {path:'/register/confirm',element:<ConfirmRegistrationPage/>},
  {path:'/forgot-password',element:<ForgotPasswordPage/>},
  {path:'/reset-password',element:<ResetPasswordPage/>},
  {element:<ProtectedRoute/>,children:[{path:'/',element:<MainLayout/>,children:[

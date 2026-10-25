@@ -53,9 +53,11 @@ terminen correctamente. Si una migración falla, el despliegue se detiene.
 El plan Free puede dormir el servicio por inactividad. Antes de una presentación,
 abrir la web, esperar a que despierte y comprobar `/api/health`.
 
-El registro público está desactivado por defecto en producción. El job de
-migraciones otorga a `medishield_app` permisos limitados para crear y actualizar
-`usuario`, gestionar `gestor_usuarios` y `recuperacion_clave`; no permite borrar
+El registro público queda habilitado cuando Brevo tiene clave y remitente
+configurados; requiere confirmar el correo antes de crear la cuenta. Se puede
+cerrar con `ALLOW_PUBLIC_REGISTRATION=false`. El job de migraciones otorga a
+`medishield_app` permisos limitados para crear y actualizar `usuario`, gestionar
+`gestor_usuarios`, `recuperacion_clave` y `registro_pendiente`; no permite borrar
 usuarios ni modificar eventos de auditoría. Si cambia el nombre de esa cuenta
 SQL, actualice `APP_DB_USER` en el workflow. Las altas, roles y contraseñas de
 personas son datos operativos de Aiven y no se copian desde MySQL local.

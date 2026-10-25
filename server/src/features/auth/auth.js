@@ -6,7 +6,7 @@ import { hashPassword, verifyPassword } from './password.js';
 import { appendAudit, recordAudit } from '../audit/audit.service.js';
 import { object, email, text, fail } from '../../shared/validation.js';
 import asyncHandler from '../../shared/utils/asyncHandler.js';
-import { recoveryConfigured, issueRecoveryToken, invalidateRecovery, sendRecoveryEmail } from './recovery.js';
+import { recoveryConfigured, issueRecoveryToken, invalidateRecovery, sendRecoveryEmail, sendRegistrationEmail } from './recovery.js';
 export const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
 export const cookieName = 'medishield_session';
 const cookieOptions = { httpOnly:true, sameSite:'strict', secure:env.production, path:'/api' };
@@ -54,14 +54,16 @@ async function consumeLogin(address, ip) {
     return true;
   });
 }
-async function consumeRegister(ip) {
+async function consumeRegister(ip, address) {
   return transaction(async cx => {
-    const bucket = hashToken(`register:ip:${ip}`);
-    await cx.execute(`INSERT INTO auth_attempt(bucket,window_start,attempts) VALUES (?,UTC_TIMESTAMP(3),1)
-      ON DUPLICATE KEY UPDATE attempts=IF(window_start < DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),1,attempts+1),
-      window_start=IF(window_start < DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),UTC_TIMESTAMP(3),window_start)`,[bucket]);
-    const [[row]] = await cx.execute('SELECT attempts FROM auth_attempt WHERE bucket=?',[bucket]);
-    if (row.attempts > 10) { await appendAudit(cx,{action:'REGISTER_THROTTLED',outcome:'DENIED',ip}); return false; }
+    for(const [kind,value,max] of [['ip',ip,10],['email',address,3]]) {
+      const bucket = hashToken(`register:${kind}:${value}`);
+      await cx.execute(`INSERT INTO auth_attempt(bucket,window_start,attempts) VALUES (?,UTC_TIMESTAMP(3),1)
+        ON DUPLICATE KEY UPDATE attempts=IF(window_start < DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),1,attempts+1),
+        window_start=IF(window_start < DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),UTC_TIMESTAMP(3),window_start)`,[bucket]);
+      const [[row]] = await cx.execute('SELECT attempts FROM auth_attempt WHERE bucket=?',[bucket]);
+      if (row.attempts > max) { await appendAudit(cx,{action:'REGISTER_THROTTLED',outcome:'DENIED',ip}); return false; }
+    }
     return true;
   });
 }
@@ -97,31 +99,64 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
 }));
 router.post('/register',sameOrigin,asyncHandler(async(req,res) => {
   if(!env.allowPublicRegistration) fail('El registro público está desactivado. Solicita una invitación a un responsable del proyecto.',403);
-  object(req.body,['name','email','password']);
-  const name=text(req.body.name,'Nombre',150), address=email(req.body.email), password=req.body.password;
+  object(req.body,['name','email']);
+  const name=text(req.body.name,'Nombre',150), address=email(req.body.email);
   if (name.length<2) fail('Nombre: debe tener al menos 2 caracteres.');
   if (address.length>150) fail('Correo inválido.');
-  if (typeof password!=='string' || password.length<15 || password.length>128) fail('La contraseña debe tener entre 15 y 128 caracteres.');
-  if (!await consumeRegister(req.ip)) { res.set('Retry-After','900'); fail('Demasiados intentos. Espera 15 minutos.',429); }
-  const clave=await hashPassword(password);
-  let user, session;
+  if(!recoveryConfigured()) fail('El registro por correo aún no está disponible.',503);
+  if (!await consumeRegister(req.ip,address)) { res.set('Retry-After','900'); fail('Demasiados intentos. Espera 15 minutos.',429); }
+  let token;
+  await transaction(async cx=>{
+    await cx.execute('DELETE FROM registro_pendiente WHERE fecha_expiracion<UTC_TIMESTAMP(3)');
+    const [[existing]]=await cx.execute('SELECT id_usuario FROM usuario WHERE correo=?',[address]);
+    if(existing) return;
+    token=crypto.randomBytes(32).toString('hex');
+    const [[pending]]=await cx.execute('SELECT correo FROM registro_pendiente WHERE correo=? FOR UPDATE',[address]);
+    if(pending) await cx.execute(`UPDATE registro_pendiente SET nombre=?,token_hash=?,fecha_creacion=UTC_TIMESTAMP(3),
+      fecha_expiracion=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE) WHERE correo=?`,[name,hashToken(token),address]);
+    else await cx.execute(`INSERT INTO registro_pendiente(correo,nombre,token_hash,fecha_expiracion)
+      VALUES (?,?,?,DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE))`,[address,name,hashToken(token)]);
+    await appendAudit(cx,{action:'REGISTER_REQUESTED',resource:'usuario',ip:req.ip,
+      details:{accountHash:crypto.createHmac('sha256',env.auditKey).update(address).digest('hex')}});
+  });
+  if(token) {
+    void sendRegistrationEmail(address,name,token).catch(async()=>{
+      try { await transaction(async cx=>{
+        await cx.execute('DELETE FROM registro_pendiente WHERE correo=? AND token_hash=?',[address,hashToken(token)]);
+        await appendAudit(cx,{action:'REGISTER_DELIVERY_FAILED',resource:'usuario',outcome:'FAILED',ip:req.ip});
+      }); } catch { /* La respuesta genérica ya se entregó; no se expone el estado de la cuenta. */ }
+    });
+  }
+  res.status(202).json({success:true,data:{message:'Si este correo puede registrarse, recibirás un enlace para confirmarlo y elegir tu contraseña.'}});
+}));
+router.post('/register/confirm',sameOrigin,asyncHandler(async(req,res) => {
+  if(!env.allowPublicRegistration) fail('El registro público está desactivado.',403);
+  object(req.body,['token','password']);
+  const {token,password}=req.body;
+  if(typeof token!=='string'||!/^[0-9a-f]{64}$/.test(token)) fail('Enlace inválido o vencido.',400);
+  if(typeof password!=='string'||password.length<15||password.length>128) fail('La contraseña debe tener entre 15 y 128 caracteres.',400);
+  const bucket=hashToken(`register-confirm:ip:${req.ip}`);
+  const allowed=await transaction(async cx=>{
+    await cx.execute(`INSERT INTO auth_attempt(bucket,window_start,attempts) VALUES (?,UTC_TIMESTAMP(3),1)
+      ON DUPLICATE KEY UPDATE attempts=IF(window_start<DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),1,attempts+1),
+      window_start=IF(window_start<DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE),UTC_TIMESTAMP(3),window_start)`,[bucket]);
+    const [[row]]=await cx.execute('SELECT attempts FROM auth_attempt WHERE bucket=?',[bucket]);
+    return row.attempts<=10;
+  });
+  if(!allowed){res.set('Retry-After','900');fail('Demasiados intentos. Espera 15 minutos.',429);}
+  const [[candidate]]=await pool.execute('SELECT correo FROM registro_pendiente WHERE token_hash=? AND fecha_expiracion>UTC_TIMESTAMP(3)',[hashToken(token)]);
+  if(!candidate) fail('Enlace inválido o vencido.',400);
+  const encoded=await hashPassword(password);
   try {
     await transaction(async cx=>{
-      // El rol siempre es 'usuario': nunca se acepta del cliente.
-      const [result]=await cx.execute("INSERT INTO usuario(nombre,correo,clave_hash,rol,estado) VALUES (?,?,?,'usuario','activo')",[name,address,clave]);
-      user={id_usuario:result.insertId,nombre:name,correo:address,rol:'usuario'};
-      session=await openSession(cx,user.id_usuario);
-      await appendAudit(cx,{actor:user.id_usuario,action:'USER_REGISTERED',resource:'usuario',ip:req.ip});
+      const [[pending]]=await cx.execute('SELECT * FROM registro_pendiente WHERE token_hash=? AND fecha_expiracion>UTC_TIMESTAMP(3) FOR UPDATE',[hashToken(token)]);
+      if(!pending) fail('Enlace inválido o vencido.',400);
+      const [result]=await cx.execute("INSERT INTO usuario(nombre,correo,clave_hash,rol,estado) VALUES (?,?,?,'usuario','activo')",[pending.nombre,pending.correo,encoded]);
+      await cx.execute('DELETE FROM registro_pendiente WHERE correo=?',[pending.correo]);
+      await appendAudit(cx,{actor:result.insertId,action:'USER_REGISTERED',resource:`usuario:${result.insertId}`,ip:req.ip});
     });
-  } catch (err) {
-    if (err?.code==='ER_DUP_ENTRY') {
-      await recordAudit({action:'REGISTER_FAILED',outcome:'DENIED',ip:req.ip,details:{accountHash:hashToken(address)}});
-      fail('No se pudo completar el registro. Si ya tienes cuenta, inicia sesión.',409);
-    }
-    throw err;
-  }
-  res.cookie(cookieName,session.token,{...cookieOptions,maxAge:8*3600*1000});
-  res.status(201).json({success:true,data:{user:publicUser(user),csrfToken:session.csrfToken}});
+  } catch(err){if(err?.code==='ER_DUP_ENTRY') fail('Esta cuenta ya existe. Inicia sesión.',409);throw err;}
+  res.status(201).json({success:true,data:{message:'Correo confirmado y cuenta creada. Ya puedes iniciar sesión.'}});
 }));
 router.post('/password/forgot',sameOrigin,asyncHandler(async(req,res) => {
   object(req.body,['email']);

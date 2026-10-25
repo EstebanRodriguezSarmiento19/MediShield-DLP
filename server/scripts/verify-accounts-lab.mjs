@@ -57,6 +57,12 @@ function lastToken(){
   assert.ok(link,'La invitación debe contener un enlace de recuperación.');
   return new URLSearchParams(new URL(link).hash.slice(1)).get('token');
 }
+function lastRegistrationToken(){
+  const content=sent.at(-1)?.textContent||'';
+  const link=content.match(/https?:\/\/[^\s]+\/register\/confirm#token=[0-9a-f]{64}/)?.[0];
+  assert.ok(link,'El registro debe enviar un enlace de confirmación.');
+  return new URLSearchParams(new URL(link).hash.slice(1)).get('token');
+}
 const suffix=crypto.randomBytes(6).toString('hex');
 const address=`qa-${suffix}@medishield.local`;
 const newAddress=`qa-new-${suffix}@medishield.local`;
@@ -65,6 +71,32 @@ const password2=`Renovada-segura-${crypto.randomBytes(18).toString('hex')}`;
 let checks=0;
 try{
   const adminSession=await login(admin.email,admin.password);
+  const beforeExistingRegistration=sent.length;
+  let registration=await call('/auth/register',{method:'POST',body:{name:'Nombre nuevo',email:admin.email}});
+  assert.equal(registration.status,202,registration.data?.error?.message);
+  assert.equal(sent.length,beforeExistingRegistration);checks++;
+  const registrationAddress=`qa-register-${suffix}@medishield.local`;
+  registration=await call('/auth/register',{method:'POST',body:{name:'Registro verificado',email:registrationAddress}});
+  assert.equal(registration.status,202,registration.data?.error?.message);checks++;
+  const registrationToken=lastRegistrationToken();
+  registration=await call('/auth/login',{method:'POST',body:{email:registrationAddress,password:password1}});
+  assert.equal(registration.status,401);checks++;
+  registration=await call('/auth/register/confirm',{method:'POST',body:{token:'0'.repeat(64),password:password1}});
+  assert.equal(registration.status,400);checks++;
+  registration=await call('/auth/register/confirm',{method:'POST',body:{token:registrationToken,password:password1}});
+  assert.equal(registration.status,201,registration.data?.error?.message);checks++;
+  registration=await call('/auth/register/confirm',{method:'POST',body:{token:registrationToken,password:password1}});
+  assert.equal(registration.status,400);checks++;
+  const registrationSession=await login(registrationAddress,password1);
+  registration=await call('/auth/me',{session:registrationSession});
+  assert.equal(registration.data.data.user.role,'usuario');checks++;
+  registration=await call('/users',{session:registrationSession});
+  assert.equal(registration.status,403);checks++;
+  registration=await call('/users',{session:adminSession});
+  const registered=registration.data.data.find(u=>u.email===registrationAddress);
+  assert.ok(registered);
+  registration=await call(`/users/${registered.id}`,{method:'DELETE',session:adminSession});
+  assert.equal(registration.status,200);checks++;
   let response=await call('/auth/me',{session:adminSession});
   const adminId=response.data.data.user.id;
   response=await call(`/users/${adminId}`,{method:'DELETE',session:adminSession});

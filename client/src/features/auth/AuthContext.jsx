@@ -9,7 +9,7 @@ export function AuthProvider({children}) {
   .catch(e=>{if(e.status!==401)setError(e.message);}).finally(()=>setLoading(false));},[]);
  useEffect(()=>{const clear=()=>{setUser(null);api.setCsrf('');};window.addEventListener('session-expired',clear);return()=>window.removeEventListener('session-expired',clear);},[]);
  const login=async(email,password)=>{const r=await api.post('/auth/login',{email,password});api.setCsrf(r.data.csrfToken);setUser(r.data.user);setError('');};
- const register=async(name,email,password)=>{const r=await api.post('/auth/register',{name,email,password});api.setCsrf(r.data.csrfToken);setUser(r.data.user);setError('');};
+ const register=async(name,email)=>{const r=await api.post('/auth/register',{name,email});return r.data.message;};
  const logout=async()=>{await api.post('/auth/logout',{});api.setCsrf('');setUser(null);};
  return <Context.Provider value={{user,loading,error,login,register,logout}}>{children}</Context.Provider>;
 }

@@ -18,14 +18,12 @@ export async function invalidateRecovery(cx, userId) {
   await cx.execute('DELETE FROM recuperacion_clave WHERE id_usuario=?', [userId]);
 }
 
-export async function sendRecoveryEmail(address, name, token, invitation = false) {
+async function sendLinkEmail(address, name, token, { path, subject, intro, instruction }) {
   if (!recoveryConfigured()) throw new Error('El proveedor de correo no está configurado.');
   const base = new URL(env.clientOrigin);
   if (env.production && base.protocol !== 'https:') throw new Error('CLIENT_ORIGIN debe usar HTTPS en producción.');
-  const url = new URL('/reset-password', base);
+  const url = new URL(path, base);
   url.hash = `token=${token}`;
-  const subject = invitation ? 'Activa tu cuenta MediShield DLP' : 'Restablece tu contraseña de MediShield DLP';
-  const intro = invitation ? 'Se creó una cuenta para ti en MediShield DLP.' : 'Recibimos una solicitud para restablecer tu contraseña de MediShield DLP.';
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   try {
@@ -34,8 +32,26 @@ export async function sendRecoveryEmail(address, name, token, invitation = false
       headers: { 'api-key': env.recoveryMail.apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ sender: { name: env.recoveryMail.senderName, email: env.recoveryMail.senderEmail },
         to: [{ email: address, name }], subject,
-        textContent: `${intro}\n\nAbre este enlace para elegir una contraseña:\n${url}\n\nEl enlace vence en 15 minutos y solo se puede usar una vez. Si no esperabas este correo, ignóralo.\n` }),
+        textContent: `${intro}\n\n${instruction}:\n${url}\n\nEl enlace vence en 15 minutos y solo se puede usar una vez. Si no esperabas este correo, ignóralo.\n` }),
     });
     if (response.status !== 201) throw new Error('Brevo rechazó el envío.');
   } finally { clearTimeout(timeout); }
+}
+
+export function sendRecoveryEmail(address, name, token, invitation = false) {
+  return sendLinkEmail(address, name, token, {
+    path:'/reset-password',
+    subject:invitation?'Activa tu cuenta MediShield DLP':'Restablece tu contraseña de MediShield DLP',
+    intro:invitation?'Se creó una cuenta para ti en MediShield DLP.':'Recibimos una solicitud para restablecer tu contraseña de MediShield DLP.',
+    instruction:'Abre este enlace para elegir una contraseña',
+  });
+}
+
+export function sendRegistrationEmail(address, name, token) {
+  return sendLinkEmail(address, name, token, {
+    path:'/register/confirm',
+    subject:'Confirma tu registro en MediShield DLP',
+    intro:'Recibimos una solicitud de registro con tu correo en MediShield DLP.',
+    instruction:'Abre este enlace para confirmar el correo y elegir tu contraseña',
+  });
 }

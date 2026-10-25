@@ -38,10 +38,20 @@ inicio de sesión. La respuesta no confirma si el correo existe. El enlace
 vence a los 15 minutos, funciona una vez y, al usarlo, cierra todas las
 sesiones existentes de esa cuenta.
 
+**Regístrate** permite solicitar una cuenta pública únicamente cuando Brevo
+está configurado. La solicitud solo pide nombre y correo; la cuenta no se crea
+todavía. El destinatario abre el enlace recibido y elige su propia contraseña.
+Al confirmarlo se crea una cuenta de rol `usuario`, sin permiso para gestionar
+cuentas. El enlace caduca a los 15 minutos y se consume una sola vez. Una
+respuesta genérica evita revelar si el correo ya pertenece a una cuenta.
+`ALLOW_PUBLIC_REGISTRATION=false` desactiva las solicitudes y confirmaciones
+nuevas sin desactivar la recuperación de contraseña ni las invitaciones.
+
 ## Comprobación y base de datos
 
 La migración `004_accounts.sql` crea `gestor_usuarios` y
-`recuperacion_clave`. `usuario` conserva rol, estado y hash de contraseña.
+`recuperacion_clave`; `005_public_registration.sql` crea
+`registro_pendiente`. `usuario` conserva rol, estado y hash de contraseña.
 `recuperacion_clave` almacena solo SHA-256 del token; los tokens completos
 viajan únicamente en el correo. `audit_event` registra altas, cambios,
 desactivaciones, invitaciones y restablecimientos sin contraseñas ni tokens.

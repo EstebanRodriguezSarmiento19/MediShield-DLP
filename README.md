@@ -50,9 +50,11 @@ desactivar una cuenta y reactivarla. Cambiar el correo invalida la contraseña
 anterior y envía una invitación al nuevo correo. Desactivar conserva la fila y
 el historial para que la auditoría siga siendo verificable.
 
-El registro público permanece disponible solo en el laboratorio local. En
-producción está desactivado por defecto; se puede habilitar expresamente con
-`ALLOW_PUBLIC_REGISTRATION=true` si el proyecto requiere altas abiertas.
+El registro público se habilita cuando Brevo tiene una clave y un remitente
+configurados. La persona solicita un enlace desde «Regístrate», confirma el
+correo y elige una contraseña; solo entonces se crea la cuenta `usuario`.
+Un enlace vence a los 15 minutos y funciona una vez. Para cerrar el registro
+público sin afectar las invitaciones, configura `ALLOW_PUBLIC_REGISTRATION=false`.
 
 Para «Olvidé mi contraseña», configura un remitente verificado y una clave de
 API de Brevo en Render. Consulta

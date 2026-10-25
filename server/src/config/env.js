@@ -14,7 +14,8 @@ const env = {
   port: Number(process.env.PORT || 3000),
   host: process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1'),
   production: process.env.NODE_ENV === 'production',
-  allowPublicRegistration: process.env.NODE_ENV !== 'production' || process.env.ALLOW_PUBLIC_REGISTRATION === 'true',
+  allowPublicRegistration: process.env.ALLOW_PUBLIC_REGISTRATION !== 'false' &&
+    Boolean(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL),
   auditKey: process.env.AUDIT_HMAC_KEY || '',
   smtp: { host:'127.0.0.1', port:Number(process.env.SMTP_PORT || 1025), enabled:process.env.SMTP_ENABLED === 'true' },
   recoveryMail: {
