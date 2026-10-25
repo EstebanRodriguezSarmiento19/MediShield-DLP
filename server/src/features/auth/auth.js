@@ -75,7 +75,7 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
   if (!await consumeLogin(address,req.ip)) { res.set('Retry-After','900'); fail('Demasiados intentos. Espera 15 minutos.',429); }
   const [[user]]=await pool.execute('SELECT * FROM usuario WHERE correo=?',[address]);
   const valid=await verifyPassword(password,user?.clave_hash);
-  if (!valid || user.estado!=='activo') {
+  if (!valid || !user || user.estado!=='activo') {
     await recordAudit({action:'LOGIN_FAILED',outcome:'DENIED',ip:req.ip,details:{accountHash:hashToken(address)}});
     fail('Credenciales inválidas.',401);
   }

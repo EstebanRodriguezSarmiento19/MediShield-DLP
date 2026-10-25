@@ -23,7 +23,7 @@ export default function RegisterPage() {
    <Typography color="text.secondary" sx={{mb:3}}>Regístrate para acceder al laboratorio de protección de datos médicos.</Typography>
    <Stack component="form" onSubmit={submit} spacing={2}>
     <TextField label="Nombre completo" autoComplete="name" value={name} onChange={e=>setName(e.target.value)} inputProps={{maxLength:150}} required/>
-    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150}} required/>
+    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150,pattern:"(?![^@]*\\.\\.)[a-zA-Z0-9](?:[a-zA-Z0-9._%+\\-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?)+",inputMode:"email"}} required/>
     <TextField label="Contraseña" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}
      error={tooShort} helperText={`Entre ${MIN_PASSWORD} y 128 caracteres.`} inputProps={{maxLength:128}} required/>
     <TextField label="Confirmar contraseña" type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)}
