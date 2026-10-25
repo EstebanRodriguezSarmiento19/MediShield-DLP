@@ -10,8 +10,15 @@ export function eventHash(previous, payload, key = env.auditKey) {
   if (key.length < 64) throw new Error('AUDIT_HMAC_KEY debe contener al menos 64 caracteres.');
   return crypto.createHmac('sha256', key).update(`${previous}\n${payload}`).digest('hex');
 }
+export function verifyTail(head, tail, key = env.auditKey) {
+  if (Number(head.sequence_no) === 0) return !tail && head.event_hash === '0'.repeat(64);
+  return Boolean(tail) && Number(tail.sequence_no) === Number(head.sequence_no) &&
+    tail.event_hash === head.event_hash && eventHash(tail.previous_hash,tail.payload,key) === tail.event_hash;
+}
 export async function appendAudit(cx, { actor = null, action, resource = null, outcome = 'OK', ip = null, details = {} }) {
   const [[head]] = await cx.execute('SELECT sequence_no, event_hash FROM audit_head WHERE id=1 FOR UPDATE');
+  const [[tail]] = await cx.execute('SELECT sequence_no,payload,previous_hash,event_hash FROM audit_event WHERE sequence_no=?',[head.sequence_no]);
+  if (!verifyTail(head,tail)) throw new Error('La firma del último evento no coincide con AUDIT_HMAC_KEY. Se detuvo la escritura de auditoría.');
   const seq = Number(head.sequence_no) + 1;
   const payload = canonical({ sequence: seq, at: new Date().toISOString(), actor, action, resource, outcome, ip, details });
   const hash = eventHash(head.event_hash, payload);
