@@ -9,16 +9,17 @@ export function AuthProvider({children}) {
   .catch(e=>{if(e.status!==401)setError(e.message);}).finally(()=>setLoading(false));},[]);
  useEffect(()=>{const clear=()=>{setUser(null);api.setCsrf('');};window.addEventListener('session-expired',clear);return()=>window.removeEventListener('session-expired',clear);},[]);
  const login=async(email,password)=>{const r=await api.post('/auth/login',{email,password});api.setCsrf(r.data.csrfToken);setUser(r.data.user);setError('');};
- const register=async(name,email,password)=>{const r=await api.post('/auth/register',{name,email,password});api.setCsrf(r.data.csrfToken);setUser(r.data.user);setError('');};
+ const register=async(name,email)=>{const r=await api.post('/auth/register',{name,email});return r.data.message;};
  const logout=async()=>{await api.post('/auth/logout',{});api.setCsrf('');setUser(null);};
  return <Context.Provider value={{user,loading,error,login,register,logout}}>{children}</Context.Provider>;
 }
 export const useAuth=()=>useContext(Context);
-export function ProtectedRoute({roles}) {
+export function ProtectedRoute({roles,manageUsers}) {
  const {user,loading,error}=useAuth();
  if(loading)return <Box sx={{p:5}}><CircularProgress aria-label="Comprobando sesión"/></Box>;
  if(error)return <Alert severity="error">{error}</Alert>;
  if(!user)return <Navigate to="/login" replace/>;
  if(roles&&!roles.includes(user.role))return <Alert severity="error">Tu rol no tiene acceso a esta página.</Alert>;
+ if(manageUsers&&!user.canManageUsers)return <Alert severity="error">No tienes permiso para gestionar cuentas.</Alert>;
  return <Outlet/>;
 }

@@ -45,14 +45,15 @@ try {
   if(error.code!=='ENOENT') throw error;
   const user='mdl_'+crypto.randomBytes(5).toString('hex'),password=crypto.randomBytes(24).toString('hex');
   await cx.query('CREATE USER ?@? IDENTIFIED BY ?',[user,'localhost',password]);
-  const tables={usuario:'SELECT, INSERT',sesion_web:'SELECT, INSERT, UPDATE, DELETE',auth_attempt:'SELECT, INSERT, UPDATE',
-    destinatario:'SELECT, INSERT, UPDATE',regla_dlp:'SELECT, UPDATE',transferencia:'SELECT, INSERT, UPDATE',
-    alerta:'SELECT, INSERT, UPDATE',historial_comunicacion:'SELECT, INSERT, UPDATE',audit_head:'SELECT, UPDATE',audit_event:'SELECT, INSERT'};
-  for(const [table,privileges] of Object.entries(tables)) await cx.query('GRANT '+privileges+' ON '+mysql.escapeId(dbName)+'.'+mysql.escapeId(table)+' TO ?@?',[user,'localhost']);
   const values={DB_HOST:config.DB_HOST||'localhost',DB_PORT:config.DB_PORT||'3306',DB_NAME:dbName,DB_USER:user,DB_PASSWORD:password,
     AUDIT_HMAC_KEY:crypto.randomBytes(32).toString('hex'),HOST:'127.0.0.1',CLIENT_ORIGIN:config.CLIENT_ORIGIN||'http://localhost:5173',SMTP_ENABLED:'true',SMTP_PORT:'1025'};
   await fs.writeFile(labPath,Object.entries(values).map(([k,v])=>k+'='+v).join('\n')+'\n',{flag:'wx',mode:0o600});
  }
+ const labConfig=dotenv.parse(await fs.readFile(labPath,'utf8'));
+ const tables={usuario:'SELECT, INSERT, UPDATE',gestor_usuarios:'SELECT, INSERT, DELETE',recuperacion_clave:'SELECT, INSERT, UPDATE, DELETE',registro_pendiente:'SELECT, INSERT, UPDATE, DELETE',sesion_web:'SELECT, INSERT, UPDATE, DELETE',auth_attempt:'SELECT, INSERT, UPDATE',
+   destinatario:'SELECT, INSERT, UPDATE',regla_dlp:'SELECT, UPDATE',transferencia:'SELECT, INSERT, UPDATE',
+   alerta:'SELECT, INSERT, UPDATE',historial_comunicacion:'SELECT, INSERT, UPDATE',audit_head:'SELECT, UPDATE',audit_event:'SELECT, INSERT'};
+ for(const [table,privileges] of Object.entries(tables)) await cx.query('GRANT '+privileges+' ON '+mysql.escapeId(dbName)+'.'+mysql.escapeId(table)+' TO ?@?',[labConfig.DB_USER,'localhost']);
  console.log('Migración completa. Usuarios: '+accounts.map(a=>a.email+' ('+a.role+')').join(', '));
  console.log('Contraseñas en server/.lab-accounts.json (archivo local excluido de Git).');
  console.log('Cuenta SQL de aplicación sin UPDATE ni DELETE sobre audit_event. Configuración en server/.env.lab.');

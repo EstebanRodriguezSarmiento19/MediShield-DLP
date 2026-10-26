@@ -10,8 +10,15 @@ export function eventHash(previous, payload, key = env.auditKey) {
   if (key.length < 64) throw new Error('AUDIT_HMAC_KEY debe contener al menos 64 caracteres.');
   return crypto.createHmac('sha256', key).update(`${previous}\n${payload}`).digest('hex');
 }
+export function verifyTail(head, tail, key = env.auditKey) {
+  if (Number(head.sequence_no) === 0) return !tail && head.event_hash === '0'.repeat(64);
+  return Boolean(tail) && Number(tail.sequence_no) === Number(head.sequence_no) &&
+    tail.event_hash === head.event_hash && eventHash(tail.previous_hash,tail.payload,key) === tail.event_hash;
+}
 export async function appendAudit(cx, { actor = null, action, resource = null, outcome = 'OK', ip = null, details = {} }) {
   const [[head]] = await cx.execute('SELECT sequence_no, event_hash FROM audit_head WHERE id=1 FOR UPDATE');
+  const [[tail]] = await cx.execute('SELECT sequence_no,payload,previous_hash,event_hash FROM audit_event WHERE sequence_no=?',[head.sequence_no]);
+  if (!verifyTail(head,tail)) throw new Error('La firma del último evento no coincide con AUDIT_HMAC_KEY. Se detuvo la escritura de auditoría.');
   const seq = Number(head.sequence_no) + 1;
   const payload = canonical({ sequence: seq, at: new Date().toISOString(), actor, action, resource, outcome, ip, details });
   const hash = eventHash(head.event_hash, payload);
@@ -25,13 +32,21 @@ export async function listAudit(limit) {
   return rows.map(r => ({ ...JSON.parse(r.payload), previousHash:r.previous_hash, hash:r.event_hash }));
 }
 export function verifyRows(rows, head, key = env.auditKey) {
-  let previous = '0'.repeat(64), seq = 0;
+  let previous = '0'.repeat(64), seq = 0, brokenAt = null;
+  const invalidHmacAt = [], brokenLinksAt = [];
   for (const row of rows) {
     seq += 1;
-    if (Number(row.sequence_no) !== seq || row.previous_hash !== previous || eventHash(previous,row.payload,key) !== row.event_hash) return { valid:false, checked:seq, brokenAt:seq };
+    const linkValid=Number(row.sequence_no)===seq && row.previous_hash===previous;
+    const hmacValid=eventHash(row.previous_hash,row.payload,key)===row.event_hash;
+    if(!linkValid){brokenLinksAt.push(seq);brokenAt??=seq;}
+    if(!hmacValid){invalidHmacAt.push(seq);brokenAt??=seq;}
     previous = row.event_hash;
   }
-  return { valid: Number(head.sequence_no) === seq && head.event_hash === previous, checked:seq, head:previous };
+  const headValid=Number(head.sequence_no)===seq && head.event_hash===previous;
+  if(!headValid) brokenAt??=seq+1;
+  return {valid:brokenAt===null,checked:seq,head:previous,headValid,
+    ...(brokenAt===null?{}:{brokenAt,invalidHmacAt:invalidHmacAt.slice(0,20),brokenLinksAt:brokenLinksAt.slice(0,20),
+      invalidHmacCount:invalidHmacAt.length,brokenLinkCount:brokenLinksAt.length})};
 }
 export async function verifyAudit() {
   return transaction(async cx => {

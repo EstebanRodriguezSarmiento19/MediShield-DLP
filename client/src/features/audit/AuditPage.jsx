@@ -10,7 +10,10 @@ export default function AuditPage(){
   <Typography>Eventos persistentes con actor, fecha UTC, acción y resultado. La cadena HMAC detecta cambios en los registros; la cuenta SQL de aplicación no puede editarlos ni borrarlos.</Typography>
   <Stack direction="row" spacing={2}><Button onClick={load}>Actualizar</Button><Button variant="contained" onClick={verify}>Verificar integridad</Button></Stack>
   {error&&<Alert severity="error">{error}</Alert>}
-  {integrity&&<Alert severity={integrity.valid?'success':'error'}>{integrity.valid?'Cadena íntegra':'Alteración detectada'} · {integrity.checked} registros comprobados</Alert>}
+  {integrity&&<Alert severity={integrity.valid?'success':'error'}>
+   {integrity.valid?'Cadena íntegra':`No se pudo verificar la auditoría desde el evento ${integrity.brokenAt}. Firmas que no coinciden: ${integrity.invalidHmacCount}; enlaces rotos: ${integrity.brokenLinkCount}. Una firma distinta puede deberse a otra clave o a una modificación; conserva los registros para investigarlo.`}
+   {' · '}{integrity.checked} registros comprobados
+  </Alert>}
   <Paper variant="outlined" sx={{overflowX:'auto'}}><Table size="small"><TableHead><TableRow>{['N.º','Fecha UTC','Actor','Acción','Recurso','Resultado','HMAC'].map(x=><TableCell key={x}>{x}</TableCell>)}</TableRow></TableHead>
    <TableBody>{items.map(r=><TableRow key={r.sequence}><TableCell>{r.sequence}</TableCell><TableCell>{r.at}</TableCell><TableCell>{r.actor??'Sin sesión'}</TableCell><TableCell>{r.action}</TableCell><TableCell sx={{maxWidth:180,overflowWrap:'anywhere'}}>{r.resource||'—'}</TableCell><TableCell>{r.outcome}</TableCell><TableCell title={r.hash} sx={{fontFamily:'monospace'}}>{r.hash.slice(0,16)}…</TableCell></TableRow>)}</TableBody></Table></Paper>
  </Stack>;

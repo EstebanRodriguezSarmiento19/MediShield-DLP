@@ -5,11 +5,12 @@ async function request(path,options={}) {
   headers:{'Content-Type':'application/json',...(csrfToken?{'X-CSRF-Token':csrfToken}:{}),...options.headers}});
  const payload=await response.json().catch(()=>null);
  if(!response.ok){
-  if(response.status===401&&!path.startsWith('/auth/login')) window.dispatchEvent(new Event('session-expired'));
+  if(response.status===401&&!path.startsWith('/auth/')) window.dispatchEvent(new Event('session-expired'));
   const error=new Error(payload?.error?.message||'No se pudo completar la solicitud.');
   error.status=response.status;throw error;
  }
  return payload;
 }
 export default {get:path=>request(path),post:(path,body)=>request(path,{method:'POST',body:JSON.stringify(body)}),
- patch:(path,body)=>request(path,{method:'PATCH',body:JSON.stringify(body)}),setCsrf:value=>{csrfToken=value;}};
+ patch:(path,body)=>request(path,{method:'PATCH',body:JSON.stringify(body)}),
+ delete:path=>request(path,{method:'DELETE'}),setCsrf:value=>{csrfToken=value;}};

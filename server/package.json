@@ -15,6 +15,7 @@
     "user:create:cloud": "node scripts/create-cloud-user.mjs",
     "user:sql": "node scripts/print-user-sql.mjs",
     "verify:lab": "node scripts/verify-lab.mjs",
+    "verify:accounts:lab": "node scripts/verify-accounts-lab.mjs",
     "smtp:lab": "node scripts/smtp-lab.mjs"
   },
   "dependencies": {

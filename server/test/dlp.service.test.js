@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {analyzeTransfer,evaluateRecipient,validateTransfer} from '../src/features/dlp/dlp.service.js';
-import {eventHash,verifyRows,canonical} from '../src/features/audit/audit.service.js';
+import {eventHash,verifyRows,verifyTail,canonical} from '../src/features/audit/audit.service.js';
 const context=(address,count=0,total=0,allowed=true)=>({recipient:evaluateRecipient(address,{autorizado:allowed,version:1},count,total)});
 const safe={recipient:'laboratorio@hospital.local',subject:'Reunión',body:'Agenda administrativa.'};
 test('permite contenido administrativo a un destinatario interno autorizado',()=>{
@@ -46,6 +46,16 @@ test('cadena HMAC detecta modificación, eliminación, reordenamiento y truncami
  const row={sequence_no:seq,payload,previous_hash:prev,event_hash:hash};prev=hash;return row;});
  const head={sequence_no:3,event_hash:prev};
  assert.equal(verifyRows(rows,head,key).valid,true);
+  assert.equal(verifyTail(head,rows[2],key),true);
+  assert.equal(verifyTail(head,rows[2],'b'.repeat(64)),false);
+  assert.equal(verifyTail(head,{...rows[2],payload:'{}'},key),false);
  const altered=structuredClone(rows);altered[1].payload='{}';
  for(const variant of [altered,[rows[0],rows[2]],[rows[1],rows[0],rows[2]],rows.slice(0,2)]) assert.equal(verifyRows(variant,head,key).valid,false);
+  const mixed=structuredClone(rows);
+  mixed[1].event_hash=eventHash(mixed[1].previous_hash,mixed[1].payload,'b'.repeat(64));
+  mixed[2].previous_hash=mixed[1].event_hash;
+  mixed[2].event_hash=eventHash(mixed[2].previous_hash,mixed[2].payload,key);
+  const report=verifyRows(mixed,{sequence_no:3,event_hash:mixed[2].event_hash},key);
+  assert.deepEqual(report.invalidHmacAt,[2]);
+  assert.deepEqual(report.brokenLinksAt,[]);
 });

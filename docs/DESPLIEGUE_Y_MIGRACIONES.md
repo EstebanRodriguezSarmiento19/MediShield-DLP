@@ -17,6 +17,13 @@ Los registros de actividad (usuarios, sesiones, análisis, alertas y auditoría)
 permanecen en la base donde se originaron. No se copian desde MySQL local a
 Aiven al publicar código.
 
+No conecte servidores locales a Aiven con un `AUDIT_HMAC_KEY` distinto al de
+Render. Las entradas que escriban quedarán enlazadas, pero no podrán
+verificarse con una sola clave. Para desarrollo utilice MySQL local; si un
+equipo comparte Aiven, todos los procesos que escriben auditoría deben usar
+la misma clave de producción gestionada como secreto. Nunca reescriba eventos
+históricos para ocultar un fallo de verificación.
+
 ## Primera configuración en GitHub y Render
 
 En GitHub, configurar los siguientes secretos de Actions en
@@ -46,10 +53,14 @@ terminen correctamente. Si una migración falla, el despliegue se detiene.
 El plan Free puede dormir el servicio por inactividad. Antes de una presentación,
 abrir la web, esperar a que despierte y comprobar `/api/health`.
 
-El registro público crea cuentas con rol `usuario`. El job de migraciones otorga
-al usuario SQL `medishield_app` únicamente `SELECT` e `INSERT` sobre la tabla
-`usuario`, de modo que el registro funcione al desplegar el código. Si cambia
-el nombre de esa cuenta SQL, actualice `APP_DB_USER` en el workflow.
+El registro público queda habilitado cuando Brevo tiene clave y remitente
+configurados; requiere confirmar el correo antes de crear la cuenta. Se puede
+cerrar con `ALLOW_PUBLIC_REGISTRATION=false`. El job de migraciones otorga a
+`medishield_app` permisos limitados para crear y actualizar `usuario`, gestionar
+`gestor_usuarios`, `recuperacion_clave` y `registro_pendiente`; no permite borrar
+usuarios ni modificar eventos de auditoría. Si cambia el nombre de esa cuenta
+SQL, actualice `APP_DB_USER` en el workflow. Las altas, roles y contraseñas de
+personas son datos operativos de Aiven y no se copian desde MySQL local.
 
 ## Prueba del caso «Seguro»
 
