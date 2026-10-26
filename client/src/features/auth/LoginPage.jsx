@@ -15,7 +15,7 @@ export default function LoginPage() {
    <Typography variant="h1" gutterBottom>MediShield DLP</Typography>
    <Typography color="text.secondary" sx={{mb:3}}>Acceso al laboratorio de protección de datos médicos.</Typography>
    <Stack component="form" onSubmit={submit} spacing={2}>
-    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/>
+    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150,pattern:"(?![^@]*\\.\\.)[a-zA-Z0-9](?:[a-zA-Z0-9._%+\\-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?)+",inputMode:"email"}} required/>
     <TextField label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/>
     {error&&<Alert severity="error">{error}</Alert>}
     <Button type="submit" variant="contained" disabled={busy}>{busy?'Verificando…':'Iniciar sesión'}</Button>

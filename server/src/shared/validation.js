@@ -14,7 +14,7 @@ export function email(value) {
   const parts = normalized.split('@');
   if (parts.length !== 2) fail('Correo inválido.');
   const [local, domain] = parts;
-  if (!local || local.length > 64 || !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/i.test(local) || local.startsWith('.') || local.endsWith('.') || local.includes('..')) fail('Correo inválido.');
+  if (!local || local.length > 64 || !/^[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?$/i.test(local) || local.includes('..')) fail('Correo inválido.');
   const labels = domain.split('.');
   if (labels.length < 2 || labels.some(label => !label || label.length > 63 || !/^[a-z0-9-]+$/i.test(label) || label.startsWith('-') || label.endsWith('-'))) fail('Correo inválido.');
   return normalized;

@@ -18,7 +18,11 @@ export default function RegisterPage() {
    <Typography color="text.secondary" sx={{mb:3}}>Confirma tu correo antes de crear una contraseña y acceder al laboratorio.</Typography>
    {done?<Alert severity="success">Si el correo puede registrarse, recibirás un enlace para confirmarlo. Revisa también la carpeta de spam. El enlace vence en 15 minutos.</Alert>:<Stack component="form" onSubmit={submit} spacing={2}>
     <TextField label="Nombre completo" autoComplete="name" value={name} onChange={e=>setName(e.target.value)} inputProps={{maxLength:150}} required/>
-    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150}} required/>
+    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150,pattern:"(?![^@]*\\.\\.)[a-zA-Z0-9](?:[a-zA-Z0-9._%+\\-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?)+",inputMode:"email"}} required/>
+    <TextField label="Contraseña" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}
+     error={tooShort} helperText={`Entre ${MIN_PASSWORD} y 128 caracteres.`} inputProps={{maxLength:128}} required/>
+    <TextField label="Confirmar contraseña" type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)}
+     error={mismatch} helperText={mismatch?'Las contraseñas no coinciden.':' '} inputProps={{maxLength:128}} required/>
     {error&&<Alert severity="error">{error}</Alert>}
     <Button type="submit" variant="contained" disabled={busy}>{busy?'Enviando…':'Enviar enlace de confirmación'}</Button>
    </Stack>}

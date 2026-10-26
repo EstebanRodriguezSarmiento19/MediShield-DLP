@@ -84,7 +84,7 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
     EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario) AS can_manage_users
     FROM usuario u WHERE u.correo=?`,[address]);
   const valid=await verifyPassword(password,user?.clave_hash);
-  if (!valid || user.estado!=='activo') {
+  if (!valid || !user || user.estado!=='activo') {
     await recordAudit({action:'LOGIN_FAILED',outcome:'DENIED',ip:req.ip,details:{accountHash:hashToken(address)}});
     fail('Credenciales inválidas.',401);
   }
