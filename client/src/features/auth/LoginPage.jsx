@@ -1,27 +1,69 @@
-import {useEffect,useState} from 'react';
-import {Alert,Box,Button,Link,Paper,Stack,TextField,Typography} from '@mui/material';
-import {Link as RouterLink,Navigate} from 'react-router-dom';
-import {useAuth} from './AuthContext.jsx';
-import api from '../../shared/services/api.js';
+import { useState } from 'react';
+import { Box, Card, CardContent, TextField, Button, Typography, Link as MuiLink, Alert } from '@mui/material';
+import { Security as SecurityIcon } from '@mui/icons-material';
+import { Link, useNavigate } from 'react-router-dom';
+
 export default function LoginPage() {
- const {user,login}=useAuth();
- const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- const [allowRegistration,setAllowRegistration]=useState(false);
- useEffect(()=>{api.get('/auth/config').then(response=>setAllowRegistration(response.data.allowPublicRegistration)).catch(()=>{});},[]);
- if(user)return <Navigate to="/dashboard" replace/>;
- async function submit(e){e.preventDefault();setError('');setBusy(true);try{await login(email,password);}catch(e){setError(e.message);}finally{setBusy(false);}}
- return <Box sx={{minHeight:'100vh',display:'grid',placeItems:'center',p:2}}>
-  <Paper variant="outlined" sx={{p:4,width:'100%',maxWidth:440}}>
-   <Typography variant="h1" gutterBottom>MediShield DLP</Typography>
-   <Typography color="text.secondary" sx={{mb:3}}>Acceso al laboratorio de protección de datos médicos.</Typography>
-   <Stack component="form" onSubmit={submit} spacing={2}>
-    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150,pattern:"(?![^@]*\\.\\.)[a-zA-Z0-9](?:[a-zA-Z0-9._%+\\-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?)+",inputMode:"email"}} required/>
-    <TextField label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/>
-    {error&&<Alert severity="error">{error}</Alert>}
-    <Button type="submit" variant="contained" disabled={busy}>{busy?'Verificando…':'Iniciar sesión'}</Button>
-   </Stack>
-   <Typography variant="body2" sx={{mt:2,textAlign:'center'}}><Link component={RouterLink} to="/forgot-password">¿Olvidaste tu contraseña?</Link></Typography>
-   {allowRegistration&&<Typography variant="body2" sx={{mt:2,textAlign:'center'}}>¿No tienes cuenta? <Link component={RouterLink} to="/register">Regístrate</Link></Typography>}
-  </Paper>
- </Box>;
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ correo: '', password: '' });
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    try {
+      // TU LÓGICA DE API AQUÍ (Ej: const res = await api.login(formData))
+      console.log('Iniciando sesión con:', formData);
+      navigate('/'); // Redirige al Dashboard
+    } catch (err) {
+      setError('Credenciales inválidas o cuenta no registrada.');
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      <Card sx={{ maxWidth: 450, width: '100%', p: 2 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+            <SecurityIcon sx={{ color: 'primary.main', mr: 1.5, fontSize: 36 }} />
+            <Typography variant="h3" component="h1" sx={{ fontWeight: 800, background: 'linear-gradient(90deg, #00E5FF 0%, #2979FF 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              MediShield DLP
+            </Typography>
+          </Box>
+
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
+            Acceso al laboratorio de protección de datos médicos.
+          </Typography>
+
+          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+          <form onSubmit={handleSubmit}>
+            <TextField fullWidth label="Correo electrónico" name="correo" type="email" value={formData.correo} onChange={handleChange} margin="normal" required variant="outlined" />
+            <TextField fullWidth label="Contraseña" name="password" type="password" value={formData.password} onChange={handleChange} margin="normal" required variant="outlined" />
+            
+            <Button fullWidth type="submit" variant="contained" color="primary" sx={{ mt: 3, mb: 2, py: 1.5 }}>
+              Iniciar sesión
+            </Button>
+          </form>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, alignItems: 'center', mt: 2 }}>
+            <MuiLink component={Link} to="/forgot-password" variant="body2" color="primary" sx={{ fontWeight: 600, textDecoration: 'none' }}>
+              ¿Olvidaste tu contraseña?
+            </MuiLink>
+            <Typography variant="body2" color="text.secondary">
+              ¿No tienes cuenta?{' '}
+              <MuiLink component={Link} to="/register" color="primary" sx={{ fontWeight: 600, textDecoration: 'none' }}>
+                Regístrate
+              </MuiLink>
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  );
 }
