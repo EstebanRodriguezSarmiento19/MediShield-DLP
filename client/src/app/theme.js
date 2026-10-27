@@ -1,6 +1,7 @@
 import { createTheme } from '@mui/material/styles';
 
-export const createAppTheme = createTheme({  palette: {
+export const createAppTheme = () => createTheme({
+  palette: {
     mode: 'dark',
     primary: {
       main: '#00E5FF', // Cian tecnológico (Cybersecurity vibe)
