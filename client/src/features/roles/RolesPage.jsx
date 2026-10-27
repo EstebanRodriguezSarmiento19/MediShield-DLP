@@ -51,8 +51,11 @@ export default function RolesPage() {
   const [form, setForm] = useState(blank);
   const [editing, setEditing] = useState(null);
 
+<<<<<<< HEAD
   const isSelf = editing?.id === user.id;
 
+=======
+>>>>>>> origin/main
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -99,6 +102,7 @@ export default function RolesPage() {
     }));
   }
 
+<<<<<<< HEAD
   // Al pasar de administrador a otro rol no se conserva el permiso de gestión de cuentas.
   function changeRole(value) {
     setForm(current => ({
@@ -110,6 +114,8 @@ export default function RolesPage() {
     }));
   }
 
+=======
+>>>>>>> origin/main
   function openEdit(account) {
     setEditing(account);
 
@@ -171,10 +177,23 @@ export default function RolesPage() {
       return;
     }
 
+<<<<<<< HEAD
     const data = {
       name: form.name,
       email: form.email,
       role: form.role,
+=======
+    /*
+     * IMPORTANTE:
+     * Aqui NO enviamos el campo role.
+     *
+     * De esta manera Administrar roles deja de cambiar
+     * el rol de una cuenta, tal como solicitaste.
+     */
+    const data = {
+      name: form.name,
+      email: form.email,
+>>>>>>> origin/main
       canManageUsers: form.canManageUsers
     };
 
@@ -600,6 +619,7 @@ export default function RolesPage() {
               />
 
               <TextField
+<<<<<<< HEAD
                 select
                 label="Rol"
                 value={form.role}
@@ -624,6 +644,15 @@ export default function RolesPage() {
                   )
                 )}
               </TextField>
+=======
+                label="Rol"
+                value={
+                  roleName[form.role] ||
+                  form.role
+                }
+                disabled
+              />
+>>>>>>> origin/main
 
               <FormControlLabel
                 control={
@@ -646,6 +675,15 @@ export default function RolesPage() {
                 label="Puede gestionar cuentas y permisos"
               />
 
+<<<<<<< HEAD
+=======
+              <Alert severity="info">
+                El rol no se puede cambiar desde esta sección.
+                Esta pantalla administra la cuenta y sus permisos
+                sin modificar el rol asignado.
+              </Alert>
+
+>>>>>>> origin/main
             </Stack>
 
           </DialogContent>

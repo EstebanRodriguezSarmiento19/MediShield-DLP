@@ -13,6 +13,10 @@ import {
 } from '@mui/material';
 
 import PersonOutlineIconModule from '@mui/icons-material/PersonOutline';
+<<<<<<< HEAD
+=======
+import SettingsOutlinedIconModule from '@mui/icons-material/SettingsOutlined';
+>>>>>>> origin/main
 import AdminPanelSettingsOutlinedIconModule from '@mui/icons-material/AdminPanelSettingsOutlined';
 import LogoutIconModule from '@mui/icons-material/Logout';
 
@@ -24,6 +28,10 @@ const LogoutIcon = icon(LogoutIconModule);
 const AdminPanelSettingsOutlinedIcon = icon(
   AdminPanelSettingsOutlinedIconModule
 );
+<<<<<<< HEAD
+=======
+const SettingsOutlinedIcon = icon(SettingsOutlinedIconModule);
+>>>>>>> origin/main
 const PersonOutlineIcon = icon(PersonOutlineIconModule);
 
 /** Menú desplegable de perfil. */
@@ -46,6 +54,14 @@ export default function ProfileMenu({ onError }) {
       path: '/profile',
       icon: <PersonOutlineIcon fontSize="small" />
     },
+<<<<<<< HEAD
+=======
+    {
+      label: 'Ajustes',
+      path: '/settings',
+      icon: <SettingsOutlinedIcon fontSize="small" />
+    }
+>>>>>>> origin/main
   ];
 
   const handleLogout = async () => {

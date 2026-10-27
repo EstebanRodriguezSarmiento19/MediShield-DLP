@@ -6,7 +6,10 @@ import { hashPassword } from '../auth/password.js';
 import { recoveryConfigured, issueRecoveryToken, invalidateRecovery, sendRecoveryEmail } from '../auth/recovery.js';
 import { appendAudit } from '../audit/audit.service.js';
 import { object, email, text, fail } from '../../shared/validation.js';
+<<<<<<< HEAD
 import { validatePassword } from '../../shared/passwordPolicy.js';
+=======
+>>>>>>> origin/main
 import asyncHandler from '../../shared/utils/asyncHandler.js';
 
 const router=Router();
@@ -121,7 +124,12 @@ router.post('/:id/password',asyncHandler(async(req,res)=>{
   object(req.body,['newPassword']);
   const id=accountId(req);
   const newPassword=req.body.newPassword;
+<<<<<<< HEAD
   validatePassword(newPassword);
+=======
+  if(typeof newPassword!=='string'||newPassword.length<15||newPassword.length>128)
+    fail('La nueva contraseña debe tener entre 15 y 128 caracteres.');
+>>>>>>> origin/main
   const encoded=await hashPassword(newPassword);
   await transaction(async cx=>{
     const [[target]]=await cx.execute(`${accountQuery} WHERE u.id_usuario=? FOR UPDATE`,[id]);

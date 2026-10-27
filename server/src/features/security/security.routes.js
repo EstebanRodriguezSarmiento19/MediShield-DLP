@@ -1,10 +1,15 @@
 import {Router} from 'express';
 import pool,{transaction} from '../../db/pool.js';
 import {roles} from '../auth/auth.js';
+<<<<<<< HEAD
 import {appendAudit,listAudit,verifyAudit,recordAudit} from '../audit/audit.service.js';
 import {loadContext,loadActiveRules,decodeResult} from '../dlp/dlp.store.js';
 import {analyzeTransfer,validateTransfer} from '../dlp/dlp.service.js';
 import {policyTestCases,runPolicyTests} from '../dlp/dlp.policyTests.js';
+=======
+import {appendAudit,listAudit,verifyAudit} from '../audit/audit.service.js';
+import {loadContext,decodeResult} from '../dlp/dlp.store.js';
+>>>>>>> origin/main
 import definitions from '../dlp/dlp.rules.js';
 import {object,email,text,version,pageLimit,fail} from '../../shared/validation.js';
 import asyncHandler from '../../shared/utils/asyncHandler.js';
@@ -74,6 +79,7 @@ router.patch('/alerts/:id',roles('admin','analista'),asyncHandler(async(req,res)
 }));
 router.get('/audit',roles('admin','analista'),asyncHandler(async(req,res)=>ok(res,await listAudit(pageLimit(req.query.limit)))));
 router.get('/audit/verify',roles('admin','analista'),asyncHandler(async(req,res)=>ok(res,await verifyAudit())));
+<<<<<<< HEAD
 router.get('/security/dlp-tests',roles('admin','analista'),asyncHandler(async(_req,res)=>ok(res,policyTestCases)));
 router.post('/security/dlp-tests/run',roles('admin','analista'),asyncHandler(async(req,res)=>{
   const report=runPolicyTests(await loadActiveRules());
@@ -90,4 +96,6 @@ router.post('/security/dlp-simulate',roles('admin','analista'),asyncHandler(asyn
     matches:analysis.content.matches.map(({ruleId,name,sensitivity,count,weight})=>({ruleId,name,sensitivity,count,weight})),
     reasons:analysis.reasons,rulesVersion:analysis.rulesVersion,latencyMs:analysis.latencyMs});
 }));
+=======
+>>>>>>> origin/main
 export default router;
