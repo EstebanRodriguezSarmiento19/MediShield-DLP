@@ -28,6 +28,31 @@ const cx = await mysql.createConnection({
   multipleStatements: false,
 });
 
+async function ensureAccountControls(cx, databaseName) {
+  const [[column]] = await cx.execute(
+    `SELECT 1
+       FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA=? AND TABLE_NAME='usuario' AND COLUMN_NAME='bloqueado_hasta'
+      LIMIT 1`,
+    [databaseName]);
+  const [[index]] = await cx.execute(
+    `SELECT 1
+       FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA=? AND TABLE_NAME='usuario' AND COLUMN_NAME='bloqueado_hasta'
+      LIMIT 1`,
+    [databaseName]);
+
+  if (!column) {
+    if (index) {
+      await cx.query('ALTER TABLE usuario ADD COLUMN bloqueado_hasta DATETIME(3) NULL');
+    } else {
+      await cx.query('ALTER TABLE usuario ADD COLUMN bloqueado_hasta DATETIME(3) NULL, ADD INDEX (bloqueado_hasta)');
+    }
+  } else if (!index) {
+    await cx.query('ALTER TABLE usuario ADD INDEX (bloqueado_hasta)');
+  }
+}
+
 try {
   await cx.query(`CREATE TABLE IF NOT EXISTS schema_migration (
     filename VARCHAR(255) PRIMARY KEY,
@@ -64,6 +89,11 @@ try {
     const statements = sql.replace(/^--.*$/gm, '').split(';').map(s => s.trim()).filter(Boolean);
     for (const statement of statements) {
       if (/^(CREATE DATABASE|USE )/i.test(statement)) continue;
+      if (filename === 'migrations/006_account_controls.sql' &&
+          /^ALTER TABLE usuario\s+ADD COLUMN bloqueado_hasta\b/i.test(statement)) {
+        await ensureAccountControls(cx, process.env.DB_NAME);
+        continue;
+      }
       await cx.query(statement);
     }
     await cx.execute('INSERT INTO schema_migration (filename, checksum) VALUES (?,?)',
