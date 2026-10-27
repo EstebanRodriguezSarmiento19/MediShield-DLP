@@ -20,18 +20,18 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      // Petición real al backend para iniciar sesión y generar la cookie HttpOnly
+      // Petición real al backend para iniciar sesión y generar la cookie de sesión
       const response = await api.post('/auth/login', {
         correo: formData.correo,
         password: formData.password
       });
 
-      // Si el backend responde con un token CSRF, lo guardamos en el helper de API
+      // Si el servidor responde con un token CSRF, se almacena en el cliente
       if (response?.csrfToken) {
         api.setCsrf(response.csrfToken);
       }
 
-      // Redirigir al panel de control tras autenticarse con éxito
+      // Redirigir al Dashboard de Seguridad una vez autenticado
       navigate('/');
     } catch (err) {
       setError(err.message || 'Credenciales inválidas o cuenta no registrada.');
