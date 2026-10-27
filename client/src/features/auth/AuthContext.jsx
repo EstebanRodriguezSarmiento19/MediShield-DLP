@@ -1,4 +1,3 @@
-
 import {
   createContext,
   useContext,
@@ -15,7 +14,6 @@ import {
   Box
 } from '@mui/material';
 import api from '../../shared/services/api.js';
-<<<<<<< HEAD
 
 const Context = createContext(null);
 
@@ -119,19 +117,6 @@ export function AuthProvider({ children }) {
       {children}
     </Context.Provider>
   );
-=======
-const Context=createContext(null);
-export function AuthProvider({children}) {
- const [user,setUser]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- useEffect(()=>{api.get('/auth/me').then(r=>{api.setCsrf(r.data.csrfToken);setUser(r.data.user);})
-  .catch(e=>{if(e.status!==401)setError(e.message);}).finally(()=>setLoading(false));},[]);
- useEffect(()=>{const clear=()=>{setUser(null);api.setCsrf('');};window.addEventListener('session-expired',clear);return()=>window.removeEventListener('session-expired',clear);},[]);
- const login=async(email,password)=>{const r=await api.post('/auth/login',{email,password});api.setCsrf(r.data.csrfToken);setUser(r.data.user);setError('');};
- const register=async(name,email,password)=>{const r=await api.post('/auth/register',password===undefined?{name,email}:{name,email,password});return r.data.message;};
- const logout=async()=>{await api.post('/auth/logout',{});api.setCsrf('');setUser(null);};
- const updateUser=patch=>setUser(current=>current&&({...current,...patch}));
- return <Context.Provider value={{user,loading,error,login,register,logout,updateUser}}>{children}</Context.Provider>;
->>>>>>> a287133 (fix)
 }
 
 export const useAuth = () => {
