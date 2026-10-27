@@ -27,23 +27,41 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === 'correo') {
+      // Máximo 254 caracteres.
+      if (value.length > 254) return;
+
+      // Solo permite caracteres habituales en un correo.
+      if (!/^[a-zA-Z0-9._%+@-]*$/.test(value)) return;
+    }
+
     setFormData((previous) => ({
       ...previous,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const correo = formData.correo.trim();
+
+    // Validación básica adicional antes de enviar.
+    if (
+      correo.length > 254 ||
+      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(correo)
+    ) {
+      setError('Introduce un correo electrónico válido.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await login(
-        formData.correo.trim(),
-        formData.password
-      );
-
+      await login(correo, formData.password);
       navigate('/', { replace: true });
     } catch (err) {
       setError(
@@ -130,6 +148,7 @@ export default function LoginPage() {
               required
               size="small"
               autoComplete="email"
+              inputProps={{ maxLength: 254 }}
             />
 
             <TextField
