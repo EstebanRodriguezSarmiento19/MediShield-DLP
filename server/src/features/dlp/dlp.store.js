@@ -3,13 +3,26 @@ import pool from '../../db/pool.js';
 import definitions from './dlp.rules.js';
 import { evaluateRecipient } from './dlp.service.js';
 import { appendAudit } from '../audit/audit.service.js';
+<<<<<<< HEAD
+export async function loadActiveRules(cx=pool) {
+  const [configs]=await cx.execute('SELECT * FROM regla_dlp ORDER BY id');
+  const rules=configs.filter(c=>c.activo).map(c=>({...definitions.find(r=>r.id===c.id),weight:c.peso,version:c.version}));
+  if (!rules.length || rules.some(r=>!r.pattern)) throw new Error('No hay reglas válidas para analizar. Operación detenida.');
+  return rules;
+}
+=======
+>>>>>>> origin/main
 export async function loadContext(cx,userId,address) {
   const [[profile]]=await cx.execute('SELECT * FROM destinatario WHERE correo=?',[address]);
   const [[history]]=await cx.execute('SELECT envios_confirmados FROM historial_comunicacion WHERE id_usuario=? AND destinatario=?',[userId,address]);
   const [[total]]=await cx.execute('SELECT COALESCE(SUM(envios_confirmados),0) total FROM historial_comunicacion WHERE id_usuario=?',[userId]);
+<<<<<<< HEAD
+  const rules=await loadActiveRules(cx);
+=======
   const [configs]=await cx.execute('SELECT * FROM regla_dlp ORDER BY id');
   const rules=configs.filter(c=>c.activo).map(c=>({...definitions.find(r=>r.id===c.id),weight:c.peso,version:c.version}));
   if (!rules.length || rules.some(r=>!r.pattern)) throw new Error('No hay reglas válidas para analizar. Operación detenida.');
+>>>>>>> origin/main
   return {recipient:evaluateRecipient(address,profile,Number(history?.envios_confirmados??0),Number(total.total)),rules};
 }
 export async function saveAnalysis(cx,result,user,ip) {

@@ -14,6 +14,14 @@ export default function AuditPage(){
    {integrity.valid?'Cadena íntegra':`No se pudo verificar la auditoría desde el evento ${integrity.brokenAt}. Firmas que no coinciden: ${integrity.invalidHmacCount}; enlaces rotos: ${integrity.brokenLinkCount}. Una firma distinta puede deberse a otra clave o a una modificación; conserva los registros para investigarlo.`}
    {' · '}{integrity.checked} registros comprobados
   </Alert>}
+<<<<<<< HEAD
+  {integrity&&!integrity.valid&&integrity.affectedEvents?.length>0&&<Paper variant="outlined" sx={{overflowX:'auto'}}>
+   <Typography variant="subtitle2" sx={{p:2,pb:1}}>Eventos con firma que no coincide (solo lectura, no se modifican)</Typography>
+   <Table size="small"><TableHead><TableRow>{['N.º','Fecha UTC','Actor','Acción'].map(x=><TableCell key={x}>{x}</TableCell>)}</TableRow></TableHead>
+    <TableBody>{integrity.affectedEvents.map(e=><TableRow key={e.sequence}><TableCell>{e.sequence}</TableCell><TableCell>{e.at??'—'}</TableCell><TableCell>{e.actor??'Sin sesión'}</TableCell><TableCell>{e.action??'—'}</TableCell></TableRow>)}</TableBody></Table>
+  </Paper>}
+=======
+>>>>>>> origin/main
   <Paper variant="outlined" sx={{overflowX:'auto'}}><Table size="small"><TableHead><TableRow>{['N.º','Fecha UTC','Actor','Acción','Recurso','Resultado','HMAC'].map(x=><TableCell key={x}>{x}</TableCell>)}</TableRow></TableHead>
    <TableBody>{items.map(r=><TableRow key={r.sequence}><TableCell>{r.sequence}</TableCell><TableCell>{r.at}</TableCell><TableCell>{r.actor??'Sin sesión'}</TableCell><TableCell>{r.action}</TableCell><TableCell sx={{maxWidth:180,overflowWrap:'anywhere'}}>{r.resource||'—'}</TableCell><TableCell>{r.outcome}</TableCell><TableCell title={r.hash} sx={{fontFamily:'monospace'}}>{r.hash.slice(0,16)}…</TableCell></TableRow>)}</TableBody></Table></Paper>
  </Stack>;

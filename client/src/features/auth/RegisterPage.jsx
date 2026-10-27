@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { Box, Card, CardContent, TextField, Button, Typography, Link as MuiLink, Alert } from '@mui/material';
 import { Security as SecurityIcon } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
+import { PasswordField, PasswordRequirements } from '../../shared/components/PasswordFields.jsx';
+import { isPasswordValid } from '../../shared/utils/passwordPolicy.js';
+=======
+>>>>>>> origin/main
 import api from '../../shared/services/api.js';
 import { useAuth } from './AuthContext.jsx';
 
@@ -34,14 +39,24 @@ export default function RegisterPage() {
     const correo = formData.correo.trim();
 
     if (direct) {
+<<<<<<< HEAD
+      if (!isPasswordValid(formData.password)) {
+        setError('La contraseña no cumple los requisitos. Revisa la lista de requisitos.');
+        return;
+      }
+=======
+>>>>>>> origin/main
       if (formData.password !== formData.confirmPassword) {
         setError('Las contraseñas no coinciden.');
         return;
       }
+<<<<<<< HEAD
+=======
       if (formData.password.length < 15 || formData.password.length > 128) {
         setError('La contraseña debe tener entre 15 y 128 caracteres.');
         return;
       }
+>>>>>>> origin/main
     }
 
     setLoading(true);
@@ -89,8 +104,14 @@ export default function RegisterPage() {
             <TextField fullWidth label="Correo electrónico" name="correo" type="email" value={formData.correo} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="email" />
             {direct && (
               <>
+<<<<<<< HEAD
+                <PasswordField fullWidth label="Contraseña" name="password" value={formData.password} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="new-password" />
+                <PasswordRequirements password={formData.password} />
+                <PasswordField fullWidth label="Confirmar contraseña" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="new-password" error={Boolean(formData.confirmPassword) && formData.confirmPassword !== formData.password} helperText={formData.confirmPassword && formData.confirmPassword !== formData.password ? 'Las contraseñas no coinciden.' : ' '} />
+=======
                 <TextField fullWidth label="Contraseña" name="password" type="password" value={formData.password} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="new-password" helperText="Entre 15 y 128 caracteres." />
                 <TextField fullWidth label="Confirmar contraseña" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="new-password" />
+>>>>>>> origin/main
               </>
             )}
             {config && !direct && available && (

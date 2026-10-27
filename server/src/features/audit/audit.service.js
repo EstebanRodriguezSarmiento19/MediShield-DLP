@@ -48,10 +48,30 @@ export function verifyRows(rows, head, key = env.auditKey) {
     ...(brokenAt===null?{}:{brokenAt,invalidHmacAt:invalidHmacAt.slice(0,20),brokenLinksAt:brokenLinksAt.slice(0,20),
       invalidHmacCount:invalidHmacAt.length,brokenLinkCount:brokenLinksAt.length})};
 }
+<<<<<<< HEAD
+function describeEvent(row) {
+  try {
+    const payload = JSON.parse(row.payload);
+    return { sequence: Number(row.sequence_no), at: payload.at ?? null, action: payload.action ?? null, actor: payload.actor ?? null };
+  } catch {
+    return { sequence: Number(row.sequence_no), at: null, action: null, actor: null };
+  }
+}
+=======
+>>>>>>> origin/main
 export async function verifyAudit() {
   return transaction(async cx => {
     const [rows] = await cx.execute('SELECT * FROM audit_event ORDER BY sequence_no');
     const [[head]] = await cx.execute('SELECT * FROM audit_head WHERE id=1');
+<<<<<<< HEAD
+    const report = verifyRows(rows,head);
+    if (report.valid) return report;
+    // Solo lectura: se muestran los eventos afectados para investigarlos; nunca se reescriben.
+    const failed = new Set([...(report.invalidHmacAt??[]), ...(report.brokenLinksAt??[])]);
+    const affectedEvents = rows.map((row,index)=>({row,seq:index+1})).filter(({seq})=>failed.has(seq)).map(({row})=>describeEvent(row));
+    return { ...report, affectedEvents };
+=======
     return verifyRows(rows,head);
+>>>>>>> origin/main
   });
 }
