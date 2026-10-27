@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+      - name: Install server dependencies
+        run: npm ci --prefix server
+      - name: Test server
+        run: npm test --prefix server
+      - name: Install client dependencies
+        run: npm ci --prefix client
+      - name: Build client
+        run: npm run build --prefix client
+
+  migrate:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    concurrency:
+      group: medishield-production-database
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install database client
+        run: npm ci --omit=dev --prefix server
+      - name: Apply versioned migrations to Aiven
+        env:
+          DB_HOST: ${{ secrets.AIVEN_DB_HOST }}
+          DB_PORT: ${{ secrets.AIVEN_DB_PORT }}
+          DB_USER: ${{ secrets.AIVEN_DB_USER }}
+          DB_PASSWORD: ${{ secrets.AIVEN_DB_PASSWORD }}
+          DB_NAME: ${{ secrets.AIVEN_DB_NAME }}
+          DB_SSL_CA_BASE64: ${{ secrets.AIVEN_DB_SSL_CA_BASE64 }}
+          APP_DB_USER: medishield_app
+        run: npm run db:migrate:cloud --prefix server

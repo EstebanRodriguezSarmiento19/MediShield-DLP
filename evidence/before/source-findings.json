@@ -1,0 +1,20 @@
+{
+  "findings": [
+    {
+      "file": "client/src/features/auth/LoginPage.jsx",
+      "finding": "Entrar a la demo redirige al dashboard sin autenticar"
+    },
+    {
+      "file": "server/src/features/dlp/dlp.store.js",
+      "finding": "Analisis guardados en arreglo en memoria; maximo 100; sin persistencia"
+    },
+    {
+      "file": "server/src/features/dlp/dlp.demoRecipients.js",
+      "finding": "Historial fijo y porcentajes de ejemplo"
+    },
+    {
+      "file": "client/src/features/audit/AuditPage.jsx",
+      "finding": "Tabla de analisis, sin actor ni eventos de autenticacion"
+    }
+  ]
+}
