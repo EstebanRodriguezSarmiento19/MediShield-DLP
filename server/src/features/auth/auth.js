@@ -74,7 +74,7 @@ async function openSession(cx, userId) {
   return { token, csrfToken };
 }
 const router=Router();
-router.get('/config',(_req,res)=>res.json({success:true,data:{allowPublicRegistration:env.allowPublicRegistration,recoveryAvailable:recoveryConfigured()}}));
+router.get('/config',(_req,res)=>res.json({success:true,data:{allowPublicRegistration:env.allowPublicRegistration,directRegistration:env.directRegistration,recoveryAvailable:recoveryConfigured()}}));
 router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
   object(req.body,['email','password']);
   const address=email(req.body.email), password=req.body.password;
@@ -97,7 +97,24 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
   res.cookie(cookieName,session.token,{...cookieOptions,maxAge:8*3600*1000});
   res.json({success:true,data:{user:publicUser(user),csrfToken:session.csrfToken}});
 }));
+async function registerDirect(req,res) {
+  object(req.body,['name','email','password']);
+  const name=text(req.body.name,'Nombre',150), address=email(req.body.email), password=req.body.password;
+  if (name.length<2) fail('Nombre: debe tener al menos 2 caracteres.');
+  if (address.length>150) fail('Correo inválido.');
+  if (typeof password!=='string' || password.length<15 || password.length>128) fail('La contraseña debe tener entre 15 y 128 caracteres.');
+  if (!await consumeRegister(req.ip,address)) { res.set('Retry-After','900'); fail('Demasiados intentos. Espera 15 minutos.',429); }
+  const encoded=await hashPassword(password);
+  try {
+    await transaction(async cx=>{
+      const [result]=await cx.execute("INSERT INTO usuario(nombre,correo,clave_hash,rol,estado) VALUES (?,?,?,'usuario','activo')",[name,address,encoded]);
+      await appendAudit(cx,{actor:result.insertId,action:'USER_REGISTERED',resource:`usuario:${result.insertId}`,ip:req.ip,details:{mode:'direct-lab'}});
+    });
+  } catch(err) { if (err?.code==='ER_DUP_ENTRY') fail('Ya existe una cuenta con ese correo. Inicia sesión.',409); throw err; }
+  res.status(201).json({success:true,data:{message:'Cuenta creada. Ya puedes iniciar sesión.'}});
+}
 router.post('/register',sameOrigin,asyncHandler(async(req,res) => {
+  if (env.directRegistration) return registerDirect(req,res);
   if(!env.allowPublicRegistration) fail('El registro público está desactivado. Solicita una invitación a un responsable del proyecto.',403);
   object(req.body,['name','email']);
   const name=text(req.body.name,'Nombre',150), address=email(req.body.email);

@@ -1,27 +1,232 @@
-import {useEffect,useState} from 'react';
-import {Alert,Box,Button,Link,Paper,Stack,TextField,Typography} from '@mui/material';
-import {Link as RouterLink,Navigate} from 'react-router-dom';
-import {useAuth} from './AuthContext.jsx';
-import api from '../../shared/services/api.js';
+
+import { useState } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Link as MuiLink,
+  Alert
+} from '@mui/material';
+import { Security as SecurityIcon } from '@mui/icons-material';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+
 export default function LoginPage() {
- const {user,login}=useAuth();
- const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- const [allowRegistration,setAllowRegistration]=useState(false);
- useEffect(()=>{api.get('/auth/config').then(response=>setAllowRegistration(response.data.allowPublicRegistration)).catch(()=>{});},[]);
- if(user)return <Navigate to="/dashboard" replace/>;
- async function submit(e){e.preventDefault();setError('');setBusy(true);try{await login(email,password);}catch(e){setError(e.message);}finally{setBusy(false);}}
- return <Box sx={{minHeight:'100vh',display:'grid',placeItems:'center',p:2}}>
-  <Paper variant="outlined" sx={{p:4,width:'100%',maxWidth:440}}>
-   <Typography variant="h1" gutterBottom>MediShield DLP</Typography>
-   <Typography color="text.secondary" sx={{mb:3}}>Acceso al laboratorio de protección de datos médicos.</Typography>
-   <Stack component="form" onSubmit={submit} spacing={2}>
-    <TextField label="Correo" type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150,pattern:"(?![^@]*\\.\\.)[a-zA-Z0-9](?:[a-zA-Z0-9._%+\\-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?)+",inputMode:"email"}} required/>
-    <TextField label="Contraseña" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/>
-    {error&&<Alert severity="error">{error}</Alert>}
-    <Button type="submit" variant="contained" disabled={busy}>{busy?'Verificando…':'Iniciar sesión'}</Button>
-   </Stack>
-   <Typography variant="body2" sx={{mt:2,textAlign:'center'}}><Link component={RouterLink} to="/forgot-password">¿Olvidaste tu contraseña?</Link></Typography>
-   {allowRegistration&&<Typography variant="body2" sx={{mt:2,textAlign:'center'}}>¿No tienes cuenta? <Link component={RouterLink} to="/register">Regístrate</Link></Typography>}
-  </Paper>
- </Box>;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+
+  const [formData, setFormData] = useState({
+    correo: '',
+    password: ''
+  });
+
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === 'correo') {
+      // Máximo 254 caracteres.
+      if (value.length > 254) return;
+
+      // Solo permite caracteres habituales en un correo.
+      if (!/^[a-zA-Z0-9._%+@-]*$/.test(value)) return;
+    }
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const correo = formData.correo.trim();
+
+    // Validación básica adicional antes de enviar.
+    if (
+      correo.length > 254 ||
+      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(correo)
+    ) {
+      setError('Introduce un correo electrónico válido.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await login(correo, formData.password);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Credenciales inválidas o cuenta no registrada.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+        bgcolor: 'background.default'
+      }}
+    >
+      <Card sx={{ maxWidth: 420, width: '100%', p: 2 }}>
+        <CardContent>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 2.5
+            }}
+          >
+            <SecurityIcon
+              sx={{
+                color: 'primary.main',
+                mr: 1,
+                fontSize: 30
+              }}
+            />
+
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                fontWeight: 800,
+                background:
+                  'linear-gradient(90deg, #00E5FF 0%, #2979FF 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
+            >
+              MediShield DLP
+            </Typography>
+          </Box>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mb: 3,
+              textAlign: 'center'
+            }}
+          >
+            Acceso al laboratorio de protección de datos médicos.
+          </Typography>
+
+          {location.state?.registered && !error && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {location.state.message || 'Cuenta creada. Ya puedes iniciar sesión.'}
+            </Alert>
+          )}
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="Correo electrónico"
+              name="correo"
+              type="email"
+              value={formData.correo}
+              onChange={handleChange}
+              margin="normal"
+              required
+              size="small"
+              autoComplete="email"
+              inputProps={{ maxLength: 254 }}
+            />
+
+            <TextField
+              fullWidth
+              label="Contraseña"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              margin="normal"
+              required
+              size="small"
+              autoComplete="current-password"
+            />
+
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+              sx={{ mt: 3, mb: 2, py: 1.2 }}
+            >
+              {loading
+                ? 'Iniciando sesión...'
+                : 'Iniciar sesión'}
+            </Button>
+          </form>
+
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              alignItems: 'center',
+              mt: 2
+            }}
+          >
+            <MuiLink
+              component={Link}
+              to="/forgot-password"
+              variant="body2"
+              color="primary"
+              sx={{
+                fontWeight: 600,
+                textDecoration: 'none'
+              }}
+            >
+              ¿Olvidaste tu contraseña?
+            </MuiLink>
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              ¿No tienes cuenta?{' '}
+              <MuiLink
+                component={Link}
+                to="/register"
+                color="primary"
+                sx={{
+                  fontWeight: 600,
+                  textDecoration: 'none'
+                }}
+              >
+                Regístrate
+              </MuiLink>
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  );
 }

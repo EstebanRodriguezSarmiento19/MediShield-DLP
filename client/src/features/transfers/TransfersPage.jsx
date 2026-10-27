@@ -16,12 +16,13 @@ import {
 } from '@mui/material';
 import ScienceOutlinedIconModule from '@mui/icons-material/ScienceOutlined';
 import SecurityOutlinedIconModule from '@mui/icons-material/SecurityOutlined';
+import icon from '../../shared/utils/icon.js';
 import { analyzeTransfer } from '../dlp/dlpApi.js';
 import api from '../../shared/services/api.js';
 
 // Vite 8 may wrap MUI 5 icon defaults during dependency optimization.
-const ScienceOutlinedIcon = ScienceOutlinedIconModule.default ?? ScienceOutlinedIconModule;
-const SecurityOutlinedIcon = SecurityOutlinedIconModule.default ?? SecurityOutlinedIconModule;
+const ScienceOutlinedIcon = icon(ScienceOutlinedIconModule);
+const SecurityOutlinedIcon = icon(SecurityOutlinedIconModule);
 
 const initialForm = {
   recipient: '',

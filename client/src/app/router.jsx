@@ -14,6 +14,10 @@ import AuditPage from '../features/audit/AuditPage.jsx';
 import RecipientsPage from '../features/recipients/RecipientsPage.jsx';
 import RulesPage from '../features/rules/RulesPage.jsx';
 import SecurityValidationPage from '../features/security/SecurityValidationPage.jsx';
+import ProfilePage from '../features/profile/ProfilePage.jsx';
+import SettingsPage from '../features/profile/SettingsPage.jsx';
+import PreferencesPage from '../features/preferences/PreferencesPage.jsx';
+import RolesPage from '../features/roles/RolesPage.jsx';
 import RouteErrorPage from '../shared/components/RouteErrorPage.jsx';
 export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvider>,errorElement:<RouteErrorPage/>,children:[
  {path:'/login',element:<LoginPage/>},
@@ -24,6 +28,8 @@ export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvid
  {element:<ProtectedRoute/>,children:[{path:'/',element:<MainLayout/>,children:[
   {index:true,element:<Navigate to="/dashboard" replace/>},
   {path:'dashboard',element:<DashboardPage/>},{path:'recipients',element:<RecipientsPage/>},
+  {path:'profile',element:<ProfilePage/>},{path:'preferences',element:<PreferencesPage/>},{path:'settings',element:<SettingsPage/>},
+  {element:<ProtectedRoute roles={['admin']}/>,children:[{path:'admin/roles',element:<RolesPage/>}]},
   {element:<ProtectedRoute manageUsers/>,children:[{path:'users',element:<UsersPage/>}]},
   {element:<ProtectedRoute roles={['admin','usuario']}/>,children:[{path:'transfers',element:<TransfersPage/>}]},
   {element:<ProtectedRoute roles={['admin','analista']}/>,children:[

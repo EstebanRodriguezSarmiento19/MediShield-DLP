@@ -1,14 +1,12 @@
-import { ThemeProvider, CssBaseline } from '@mui/material';
 import { RouterProvider } from 'react-router-dom';
-import theme from './theme.js';
+import { PreferencesProvider } from '../features/preferences/PreferencesContext.jsx';
 import router from './router.jsx';
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <PreferencesProvider>
       <RouterProvider router={router} />
-    </ThemeProvider>
+    </PreferencesProvider>
   );
 }
 

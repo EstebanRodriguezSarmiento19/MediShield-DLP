@@ -9,6 +9,7 @@ import { object, email, text, fail } from '../../shared/validation.js';
 import asyncHandler from '../../shared/utils/asyncHandler.js';
 
 const router=Router();
+const adminOnly=msg=>Object.assign(new Error(msg),{statusCode:403,isOperational:true});
 const accountQuery=`SELECT u.id_usuario AS id,u.nombre AS name,u.correo AS email,u.rol AS role,
   u.estado AS status,u.fecha_creacion AS createdAt,
   (u.rol='admin' OR EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario)) AS canManageUsers
@@ -57,6 +58,7 @@ router.post('/',asyncHandler(async(req,res)=>{
   const name=text(req.body.name,'Nombre',150),address=email(req.body.email),assignedRole=role(req.body.role);
   const canManage=managerFlag(req.body.canManageUsers);
   if(name.length<2||address.length>150) fail('Nombre o correo inválido.');
+  if(req.user.role!=='admin'&&(assignedRole!=='usuario'||canManage)) throw adminOnly('Solo un administrador puede asignar roles o permisos.');
   if(!recoveryConfigured()) fail('Configura el proveedor de correo antes de crear cuentas.',503);
   const encoded=await hashPassword(randomPassword());
   let id,token;
@@ -91,6 +93,7 @@ router.patch('/:id',asyncHandler(async(req,res)=>{
       emailChanged=address!==target.email;
       if(id===req.user.id&&(emailChanged||assignedRole!==target.role||canManage!==Boolean(target.canManageUsers)))
         fail('No puedes cambiar tu propio correo o permisos desde esta pantalla.',403);
+      if(req.user.role!=='admin'&&(assignedRole!==target.role||canManage!==Boolean(target.canManageUsers))) throw adminOnly('Solo un administrador puede modificar roles o permisos.');
       if(emailChanged&&!recoveryConfigured()) fail('Configura el proveedor de correo antes de cambiar direcciones.',503);
       await ensureNotLastAdmin(cx,target,assignedRole);
       const permissionsChanged=assignedRole!==target.role||canManage!==Boolean(target.canManageUsers);

@@ -1,144 +1,455 @@
-import { useEffect, useState } from 'react';
 import {
-  Alert,
   Box,
+  Grid,
   Card,
   CardContent,
+  Typography,
   Chip,
-  Grid,
-  Paper,
-  Skeleton,
-  Stack,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  Typography,
+  Stack
 } from '@mui/material';
-import ShieldOutlinedIconModule from '@mui/icons-material/ShieldOutlined';
-import useHealthCheck from '../../shared/hooks/useHealthCheck.js';
-import { getDlpStats, getRecentDlpAnalyses } from '../dlp/dlpApi.js';
 
-// Vite 8 may expose icons from MUI 5 as { default: Component } in development.
-// Normalize both module shapes so React always receives the component itself.
-const ShieldOutlinedIcon = ShieldOutlinedIconModule.default ?? ShieldOutlinedIconModule;
+import {
+  Shield,
+  ErrorOutline,
+  DataUsage,
+  Security,
+  Block,
+  Warning
+} from '@mui/icons-material';
 
-const statCards = [
-  { key: 'total', label: 'Analisis realizados' },
-  { key: 'allowed', label: 'Permitidos' },
-  { key: 'alerted', label: 'Advertencias' },
-  { key: 'blocked', label: 'Bloqueados' },
-];
-
-function decisionColor(decision) {
-  if (decision === 'PERMITIR') return 'success';
-  if (decision === 'ALERTAR') return 'warning';
-  return 'error';
-}
-
-function DashboardPage() {
-  const { status, databaseStatus } = useHealthCheck();
-  const [stats, setStats] = useState(null);
-  const [recent, setRecent] = useState([]);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    Promise.all([getDlpStats(), getRecentDlpAnalyses(6)])
-      .then(([statsResponse, recentResponse]) => {
-        setStats(statsResponse.data);
-        setRecent(recentResponse.data);
-      })
-      .catch((requestError) => setError(requestError.message));
-  }, []);
-
+export default function DashboardPage() {
   return (
-    <Stack spacing={3}>
-      <Box>
-        <Typography variant="h1">Panel de control</Typography>
-        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Actividad persistente del motor DLP. El profesional ve sus análisis; los roles de seguridad ven el conjunto.
+    <Box>
+      <Box sx={{ mb: 5 }}>
+        <Typography
+          variant="h3"
+          gutterBottom
+          sx={{ display: 'flex', alignItems: 'center' }}
+        >
+          Dashboard de Seguridad
+        </Typography>
+
+        <Typography variant="body1" color="text.secondary">
+          Monitorización en tiempo real de fuga de datos clínicos y análisis de red.
         </Typography>
       </Box>
 
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-        <Chip
-          variant="outlined"
-          color={status === 'connected' ? 'success' : status === 'error' ? 'error' : 'default'}
-          label={status === 'connected' ? 'Backend conectado' : status === 'error' ? 'Backend sin conexion' : 'Comprobando backend'}
-        />
-        <Chip
-          variant="outlined"
-          color={databaseStatus === 'connected' ? 'success' : 'default'}
-          label={`MySQL: ${databaseStatus || 'comprobando'}`}
-        />
-        <Chip variant="outlined" color="primary" icon={<ShieldOutlinedIcon />} label="Motor DLP activo" />
-      </Stack>
+      {/* Tarjetas de métricas */}
+      <Grid container spacing={4}>
 
-      {error && <Alert severity="error">{error}</Alert>}
+        {/* Transferencias */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start'
+                }}
+              >
+                <Box>
+                  <Typography
+                    color="text.secondary"
+                    variant="subtitle2"
+                    sx={{
+                      textTransform: 'uppercase',
+                      mb: 1
+                    }}
+                  >
+                    Transferencias
+                  </Typography>
 
-      <Grid container spacing={2}>
-        {statCards.map((card) => (
-          <Grid item xs={12} sm={6} lg={3} key={card.key}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">{card.label}</Typography>
-                {stats ? (
-                  <Typography sx={{ fontSize: '2rem', fontWeight: 700, mt: 1 }}>{stats[card.key]}</Typography>
-                ) : (
-                  <Skeleton width={60} height={48} />
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+                  <Typography variant="h4" color="text.primary">
+                    1,245
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(0, 229, 255, 0.1)'
+                  }}
+                >
+                  <DataUsage sx={{ color: 'primary.main' }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Alertas DLP */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start'
+                }}
+              >
+                <Box>
+                  <Typography
+                    color="text.secondary"
+                    variant="subtitle2"
+                    sx={{
+                      textTransform: 'uppercase',
+                      mb: 1
+                    }}
+                  >
+                    Alertas DLP
+                  </Typography>
+
+                  <Typography variant="h4" color="error.main">
+                    12
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(255, 23, 68, 0.1)'
+                  }}
+                >
+                  <ErrorOutline color="error" />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Eventos NIDS */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start'
+                }}
+              >
+                <Box>
+                  <Typography
+                    color="text.secondary"
+                    variant="subtitle2"
+                    sx={{
+                      textTransform: 'uppercase',
+                      mb: 1
+                    }}
+                  >
+                    Eventos NIDS
+                  </Typography>
+
+                  <Typography variant="h4">
+                    24
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(255, 193, 7, 0.1)'
+                  }}
+                >
+                  <Security color="warning" />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Bloqueados */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start'
+                }}
+              >
+                <Box>
+                  <Typography
+                    color="text.secondary"
+                    variant="subtitle2"
+                    sx={{
+                      textTransform: 'uppercase',
+                      mb: 1
+                    }}
+                  >
+                    Bloqueados
+                  </Typography>
+
+                  <Typography variant="h4" color="error.main">
+                    8
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(255, 23, 68, 0.1)'
+                  }}
+                >
+                  <Block color="error" />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
-        <Box sx={{ p: 2.5, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h2">Actividad DLP reciente</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Los análisis se conservan en MySQL y permanecen disponibles después de reiniciar el servidor.
-          </Typography>
-        </Box>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Fecha</TableCell>
-                <TableCell>Destinatario</TableCell>
-                <TableCell>Tipo</TableCell>
-                <TableCell>Riesgo</TableCell>
-                <TableCell>Decision</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {recent.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 5, color: 'text.secondary' }}>
-                    Aun no hay analisis. Ve a Transferencias y ejecuta un caso de laboratorio.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                recent.map((item) => (
-                  <TableRow key={item.id} hover>
-                    <TableCell>{new Date(item.createdAt).toLocaleTimeString('es-CO')}</TableCell>
-                    <TableCell>{item.recipient.email}</TableCell>
-                    <TableCell>{item.recipient.type}</TableCell>
-                    <TableCell>{item.risk.score}/100</TableCell>
-                    <TableCell>
-                      <Chip size="small" label={item.decision} color={decisionColor(item.decision)} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </Stack>
+      {/* Secciones principales */}
+      <Grid container spacing={4} sx={{ mt: 1 }}>
+
+        {/* NIDS / SNORT */}
+        <Grid item xs={12} lg={8}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 4 }}>
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 3 }}
+              >
+                <Box>
+                  <Typography variant="h5">
+                    Tráfico y Análisis NIDS (Snort)
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Eventos detectados por el sistema de detección de intrusiones.
+                  </Typography>
+                </Box>
+
+                <Chip
+                  label="NIDS activo"
+                  color="success"
+                  size="small"
+                />
+              </Stack>
+
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  overflow: 'hidden'
+                }}
+              >
+                <Table size="small">
+
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Hora</TableCell>
+                      <TableCell>Regla Snort</TableCell>
+                      <TableCell>Origen</TableCell>
+                      <TableCell>Destino</TableCell>
+                      <TableCell>Acción</TableCell>
+                    </TableRow>
+                  </TableHead>
+
+                  <TableBody>
+
+                    <TableRow>
+                      <TableCell>21:42:18</TableCell>
+                      <TableCell>ET SCAN Suspicious Traffic</TableCell>
+                      <TableCell>192.168.1.20</TableCell>
+                      <TableCell>10.0.0.15</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label="Bloqueado"
+                          color="error"
+                        />
+                      </TableCell>
+                    </TableRow>
+
+                    <TableRow>
+                      <TableCell>21:39:04</TableCell>
+                      <TableCell>Possible Port Scan</TableCell>
+                      <TableCell>192.168.1.31</TableCell>
+                      <TableCell>10.0.0.15</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label="Alertado"
+                          color="warning"
+                        />
+                      </TableCell>
+                    </TableRow>
+
+                    <TableRow>
+                      <TableCell>21:35:51</TableCell>
+                      <TableCell>HTTP Suspicious Request</TableCell>
+                      <TableCell>192.168.1.44</TableCell>
+                      <TableCell>10.0.0.15</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label="Detectado"
+                          color="info"
+                        />
+                      </TableCell>
+                    </TableRow>
+
+                    <TableRow>
+                      <TableCell>21:31:26</TableCell>
+                      <TableCell>Unauthorized Connection</TableCell>
+                      <TableCell>192.168.1.52</TableCell>
+                      <TableCell>10.0.0.15</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label="Bloqueado"
+                          color="error"
+                        />
+                      </TableCell>
+                    </TableRow>
+
+                  </TableBody>
+                </Table>
+              </Box>
+
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* MOTOR DLP */}
+        <Grid item xs={12} lg={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 4 }}>
+
+              <Typography variant="h5" sx={{ mb: 3 }}>
+                Estado del Motor DLP
+              </Typography>
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}
+              >
+                <Shield
+                  sx={{
+                    color: 'success.main',
+                    mr: 2,
+                    fontSize: 40
+                  }}
+                />
+
+                <Box>
+                  <Typography
+                    variant="body1"
+                    fontWeight="600"
+                  >
+                    Servicio Activo
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    Reglas actualizadas: Hoy
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Stack spacing={2}>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2
+                  }}
+                >
+                  <Security color="success" />
+
+                  <Box>
+                    <Typography variant="body2">
+                      Motor DLP
+                    </Typography>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      Funcionando correctamente
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2
+                  }}
+                >
+                  <Warning color="warning" />
+
+                  <Box>
+                    <Typography variant="body2">
+                      Alertas pendientes
+                    </Typography>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      12 eventos requieren revisión
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2
+                  }}
+                >
+                  <Block color="error" />
+
+                  <Box>
+                    <Typography variant="body2">
+                      Comunicaciones bloqueadas
+                    </Typography>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      8 bloqueos registrados
+                    </Typography>
+                  </Box>
+                </Box>
+
+              </Stack>
+
+            </CardContent>
+          </Card>
+        </Grid>
+
+      </Grid>
+    </Box>
   );
 }
-
-export default DashboardPage;

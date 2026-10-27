@@ -46,7 +46,7 @@ try {
   const user='mdl_'+crypto.randomBytes(5).toString('hex'),password=crypto.randomBytes(24).toString('hex');
   await cx.query('CREATE USER ?@? IDENTIFIED BY ?',[user,'localhost',password]);
   const values={DB_HOST:config.DB_HOST||'localhost',DB_PORT:config.DB_PORT||'3306',DB_NAME:dbName,DB_USER:user,DB_PASSWORD:password,
-    AUDIT_HMAC_KEY:crypto.randomBytes(32).toString('hex'),HOST:'127.0.0.1',CLIENT_ORIGIN:config.CLIENT_ORIGIN||'http://localhost:5173',SMTP_ENABLED:'true',SMTP_PORT:'1025'};
+    AUDIT_HMAC_KEY:crypto.randomBytes(32).toString('hex'),HOST:'127.0.0.1',CLIENT_ORIGIN:config.CLIENT_ORIGIN||'http://localhost:5173',SMTP_ENABLED:'true',SMTP_PORT:'1025',ALLOW_DIRECT_REGISTRATION:'true'};
   await fs.writeFile(labPath,Object.entries(values).map(([k,v])=>k+'='+v).join('\n')+'\n',{flag:'wx',mode:0o600});
  }
  const labConfig=dotenv.parse(await fs.readFile(labPath,'utf8'));
