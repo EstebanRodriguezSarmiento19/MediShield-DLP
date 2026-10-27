@@ -1,0 +1,18 @@
+ALTER TABLE usuario
+  ADD COLUMN bloqueado_hasta DATETIME(3) NULL,
+  ADD INDEX (bloqueado_hasta);
+
+CREATE TABLE IF NOT EXISTS error_log (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  method VARCHAR(10) NOT NULL,
+  path VARCHAR(255) NOT NULL,
+  status_code SMALLINT UNSIGNED NOT NULL,
+  error_code VARCHAR(80) NULL,
+  error_name VARCHAR(120) NULL,
+  ip VARCHAR(45) NULL,
+  user_id INT UNSIGNED NULL,
+  FOREIGN KEY (user_id) REFERENCES usuario(id_usuario) ON DELETE SET NULL,
+  INDEX (at),
+  INDEX (status_code)
+) ENGINE=InnoDB;

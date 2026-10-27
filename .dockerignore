@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/.lab-accounts.json
+**/.lab-test-accounts.json
+evidence
+docs
+*.log
