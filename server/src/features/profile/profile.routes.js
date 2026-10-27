@@ -2,7 +2,7 @@ import { Router } from 'express';
 import pool, { transaction } from '../../db/pool.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { appendAudit } from '../audit/audit.service.js';
-import { object, text, fail } from '../../shared/validation.js';
+import { object, email, text, fail } from '../../shared/validation.js';
 import asyncHandler from '../../shared/utils/asyncHandler.js';
 
 /** Perfil propio: disponible para cualquier usuario autenticado. */
@@ -14,14 +14,39 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.patch('/', asyncHandler(async (req, res) => {
-  object(req.body, ['name']);
+  object(req.body, ['name', 'email', 'currentPassword']);
   const name = text(req.body.name, 'Nombre', 150);
+  const address = req.body.email === undefined ? req.user.email : email(req.body.email);
+  const emailChanged = address !== req.user.email;
+  if (emailChanged && (typeof req.body.currentPassword !== 'string' || req.body.currentPassword.length < 1)) {
+    fail('Confirma tu contraseña actual para cambiar el correo.');
+  }
   if (name.length < 2) fail('Nombre: debe tener al menos 2 caracteres.');
-  await transaction(async cx => {
-    await cx.execute('UPDATE usuario SET nombre=? WHERE id_usuario=?', [name, req.user.id]);
-    await appendAudit(cx, { actor: req.user.id, action: 'PROFILE_UPDATED', resource: `usuario:${req.user.id}`, ip: req.ip });
-  });
-  res.json({ success: true, data: { ...req.user, name } });
+  if (emailChanged) {
+    const [[row]] = await pool.execute('SELECT clave_hash FROM usuario WHERE id_usuario=?', [req.user.id]);
+    if (!await verifyPassword(req.body.currentPassword, row?.clave_hash)) {
+      fail('La contraseña actual no es correcta.', 403);
+    }
+  }
+  try {
+    await transaction(async cx => {
+      await cx.execute('UPDATE usuario SET nombre=?,correo=? WHERE id_usuario=?', [name, address, req.user.id]);
+      if (emailChanged) {
+        await cx.execute('DELETE FROM sesion_web WHERE id_usuario=? AND sesion_hash<>?', [req.user.id, req.session.sesion_hash]);
+      }
+      await appendAudit(cx, {
+        actor: req.user.id,
+        action: emailChanged ? 'PROFILE_EMAIL_UPDATED' : 'PROFILE_UPDATED',
+        resource: `usuario:${req.user.id}`,
+        ip: req.ip,
+        details: { emailChanged }
+      });
+    });
+  } catch (error) {
+    if (error?.code === 'ER_DUP_ENTRY') fail('Ya existe una cuenta con ese correo.', 409);
+    throw error;
+  }
+  res.json({ success: true, data: { ...req.user, name, email: address } });
 }));
 
 router.post('/password', asyncHandler(async (req, res) => {

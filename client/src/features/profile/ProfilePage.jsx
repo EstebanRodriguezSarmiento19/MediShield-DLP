@@ -6,12 +6,12 @@ import {roleName,initials} from '../../shared/utils/roles.js';
 
 export default function ProfilePage(){
  const {user,updateUser}=useAuth();
- const [name,setName]=useState(user.name),[createdAt,setCreatedAt]=useState(null);
+ const [name,setName]=useState(user.name),[email,setEmail]=useState(user.email),[currentPassword,setCurrentPassword]=useState(''),[createdAt,setCreatedAt]=useState(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{api.get('/profile').then(r=>setCreatedAt(r.data.createdAt)).catch(()=>{});},[]);
  async function save(event){
   event.preventDefault();setBusy(true);setError('');setNotice('');
-  try{const r=await api.patch('/profile',{name});updateUser({name:r.data.name});setNotice('Perfil actualizado.');}
+  try{const r=await api.patch('/profile',{name,email,...(email!==user.email?{currentPassword}: {})});updateUser({name:r.data.name,email:r.data.email});setCurrentPassword('');setNotice('Perfil actualizado.');}
   catch(err){setError(err.message);}finally{setBusy(false);}
  }
  return <Stack spacing={3} sx={{maxWidth:720}}>
@@ -25,10 +25,11 @@ export default function ProfilePage(){
    </Stack>
    <Stack component="form" onSubmit={save} spacing={2}>
     <TextField label="Nombre" value={name} onChange={e=>setName(e.target.value)} inputProps={{maxLength:150}} required/>
-    <TextField label="Correo" value={user.email} disabled helperText="El correo solo puede cambiarlo un administrador."/>
+    <TextField label="Correo" type="email" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150}} required/>
+    {email!==user.email&&<TextField label="Contraseña actual" type="password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} required helperText="Necesaria para confirmar el cambio de correo."/>}
     <TextField label="Rol" value={roleName[user.role]} disabled helperText="Los roles solo los modifica un administrador."/>
     {createdAt&&<Typography variant="body2" color="text.secondary">Cuenta creada el {new Date(createdAt).toLocaleDateString('es')}</Typography>}
-    <Button type="submit" variant="contained" disabled={busy||name.trim()===user.name||name.trim().length<2} sx={{alignSelf:'flex-start'}}>Guardar cambios</Button>
+    <Button type="submit" variant="contained" disabled={busy||(name.trim()===user.name&&email===user.email)||name.trim().length<2} sx={{alignSelf:'flex-start'}}>Guardar cambios</Button>
    </Stack>
   </Stack></Paper>
  </Stack>;

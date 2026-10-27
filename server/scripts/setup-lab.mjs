@@ -53,6 +53,7 @@ try {
  const tables={usuario:'SELECT, INSERT, UPDATE',gestor_usuarios:'SELECT, INSERT, DELETE',recuperacion_clave:'SELECT, INSERT, UPDATE, DELETE',registro_pendiente:'SELECT, INSERT, UPDATE, DELETE',sesion_web:'SELECT, INSERT, UPDATE, DELETE',auth_attempt:'SELECT, INSERT, UPDATE',
    destinatario:'SELECT, INSERT, UPDATE',regla_dlp:'SELECT, UPDATE',transferencia:'SELECT, INSERT, UPDATE',
    alerta:'SELECT, INSERT, UPDATE',historial_comunicacion:'SELECT, INSERT, UPDATE',audit_head:'SELECT, UPDATE',audit_event:'SELECT, INSERT'};
+ tables.error_log='INSERT';
  for(const [table,privileges] of Object.entries(tables)) await cx.query('GRANT '+privileges+' ON '+mysql.escapeId(dbName)+'.'+mysql.escapeId(table)+' TO ?@?',[labConfig.DB_USER,'localhost']);
  console.log('Migración completa. Usuarios: '+accounts.map(a=>a.email+' ('+a.role+')').join(', '));
  console.log('Contraseñas en server/.lab-accounts.json (archivo local excluido de Git).');

@@ -9,16 +9,23 @@ const roleName={admin:'Administrador',analista:'Analista',usuario:'Usuario'};
 export default function UsersPage(){
  const {user}=useAuth();
  const [items,setItems]=useState([]),[form,setForm]=useState(blank),[editing,setEditing]=useState(null);
+ const [passwordTarget,setPasswordTarget]=useState(null),[newPassword,setNewPassword]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  async function load(){try{const result=await api.get('/users');setItems(result.data);}catch(err){setError(err.message);}}
  useEffect(()=>{load();},[]);
  function change(field,value){setForm(current=>({...current,[field]:value}));}
  function openEdit(account){setEditing(account);setForm({name:account.name,email:account.email,role:account.role,canManageUsers:account.canManageUsers});setError('');setNotice('');}
  function closeEdit(){setEditing(null);setForm(blank);}
+ function closePassword(){setPasswordTarget(null);setNewPassword('');}
  async function run(action){setBusy(true);setError('');setNotice('');try{const response=await action();setNotice(response?.data?.message||'Cambio guardado.');await load();return true;}
   catch(err){setError(err.message);return false;}finally{setBusy(false);}}
  async function create(event){event.preventDefault();const ok=await run(()=>api.post('/users',form));if(ok)setForm(blank);}
  async function save(event){event.preventDefault();const ok=await run(()=>api.patch(`/users/${editing.id}`,form));if(ok)closeEdit();}
+ async function changePassword(event){
+  event.preventDefault();
+  const ok=await run(()=>api.post(`/users/${passwordTarget.id}/password`,{newPassword}));
+  if(ok)closePassword();
+ }
  async function deactivate(account){if(!window.confirm(`¿Desactivar la cuenta de ${account.name}? Se cerrarán sus sesiones y se conservará el historial de auditoría.`))return;
   await run(()=>api.delete(`/users/${account.id}`));}
  return <Stack spacing={3}>
@@ -47,6 +54,7 @@ export default function UsersPage(){
     {account.status==='activo'?<>
      <Button size="small" onClick={()=>openEdit(account)} disabled={busy}>Editar</Button>
      {account.id!==user.id&&<><Button size="small" onClick={()=>run(()=>api.post(`/users/${account.id}/invite`,{}))} disabled={busy}>Reenviar invitación</Button>
+     <Button size="small" onClick={()=>setPasswordTarget(account)} disabled={busy}>Cambiar contraseña</Button>
       <Button size="small" color="error" onClick={()=>deactivate(account)} disabled={busy}>Desactivar</Button></>}
     </>:<Button size="small" onClick={()=>run(()=>api.post(`/users/${account.id}/reactivate`,{}))} disabled={busy}>Reactivar e invitar</Button>}
    </Stack></TableCell>
@@ -64,5 +72,15 @@ export default function UsersPage(){
     {editing&&form.email!==editing.email&&<Alert severity="warning">Al cambiar el correo se cerrarán las sesiones, se invalidará la contraseña anterior y se enviará una invitación al nuevo correo.</Alert>}
    </Stack></DialogContent><DialogActions><Button onClick={closeEdit}>Cancelar</Button><Button type="submit" variant="contained" disabled={busy}>Guardar</Button></DialogActions>
   </Stack></Dialog>
+  <Dialog open={Boolean(passwordTarget)} onClose={closePassword} fullWidth maxWidth="sm">
+   <Stack component="form" onSubmit={changePassword}>
+    <DialogTitle>Cambiar contraseña de {passwordTarget?.name}</DialogTitle>
+    <DialogContent><Stack spacing={2} sx={{pt:1}}>
+     <TextField label="Nueva contraseña" type="password" value={newPassword} onChange={event=>setNewPassword(event.target.value)} inputProps={{minLength:15,maxLength:128}} helperText="Entre 15 y 128 caracteres." required/>
+     <Alert severity="info">La contraseña de un solo carácter se rechazará. Al guardar se cerrarán las sesiones del usuario.</Alert>
+    </Stack></DialogContent>
+    <DialogActions><Button onClick={closePassword}>Cancelar</Button><Button type="submit" variant="contained" disabled={busy}>Guardar contraseña</Button></DialogActions>
+   </Stack>
+  </Dialog>
  </Stack>;
 }

@@ -83,14 +83,29 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
   const [[user]]=await pool.execute(`SELECT u.*,
     EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario) AS can_manage_users
     FROM usuario u WHERE u.correo=?`,[address]);
+  if (user?.bloqueado_hasta && new Date(user.bloqueado_hasta).getTime() > Date.now()) {
+    res.set('Retry-After','900');
+    fail('La cuenta está bloqueada temporalmente. Espera 15 minutos.', 429);
+  }
   const valid=await verifyPassword(password,user?.clave_hash);
   if (!valid || !user || user.estado!=='activo') {
+    const [[attempts]] = await pool.execute(
+      'SELECT attempts FROM auth_attempt WHERE bucket=?',
+      [hashToken('email:'+address)]
+    );
+    if (user && Number(attempts?.attempts) >= 5) {
+      await pool.execute(
+        'UPDATE usuario SET bloqueado_hasta=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 15 MINUTE) WHERE id_usuario=?',
+        [user.id_usuario]
+      );
+    }
     await recordAudit({action:'LOGIN_FAILED',outcome:'DENIED',ip:req.ip,details:{accountHash:hashToken(address)}});
     fail('Credenciales inválidas.',401);
   }
   let session;
   await transaction(async cx=>{
     await cx.execute('UPDATE auth_attempt SET attempts=0 WHERE bucket=?',[hashToken('email:'+address)]);
+    await cx.execute('UPDATE usuario SET bloqueado_hasta=NULL WHERE id_usuario=?',[user.id_usuario]);
     session=await openSession(cx,user.id_usuario);
     await appendAudit(cx,{actor:user.id_usuario,action:'LOGIN_SUCCESS',ip:req.ip});
   });

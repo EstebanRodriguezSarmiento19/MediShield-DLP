@@ -116,6 +116,24 @@ router.patch('/:id',asyncHandler(async(req,res)=>{
   const emailSent=destination?await deliver(destination.address,destination.name,token,true):null;
   res.json({success:true,data:{emailSent,message:emailChanged?(emailSent?'Correo actualizado e invitación enviada.':'Correo actualizado. El envío falló; usa «Reenviar invitación».'):'Cuenta actualizada.'}});
 }));
+router.post('/:id/password',asyncHandler(async(req,res)=>{
+  object(req.body,['newPassword']);
+  const id=accountId(req);
+  const newPassword=req.body.newPassword;
+  if(typeof newPassword!=='string'||newPassword.length<15||newPassword.length>128)
+    fail('La nueva contraseña debe tener entre 15 y 128 caracteres.');
+  const encoded=await hashPassword(newPassword);
+  await transaction(async cx=>{
+    const [[target]]=await cx.execute(`${accountQuery} WHERE u.id_usuario=? FOR UPDATE`,[id]);
+    if(!target) fail('Cuenta no encontrada.',404);
+    if(target.status!=='activo') fail('La cuenta está desactivada.',409);
+    await cx.execute('UPDATE usuario SET clave_hash=?,bloqueado_hasta=NULL WHERE id_usuario=?',[encoded,id]);
+    await cx.execute('DELETE FROM sesion_web WHERE id_usuario=?',[id]);
+    await invalidateRecovery(cx,id);
+    await appendAudit(cx,{actor:req.user.id,action:'ADMIN_PASSWORD_CHANGED',resource:`usuario:${id}`,ip:req.ip});
+  });
+  res.json({success:true,data:{message:'Contraseña actualizada y sesiones cerradas.'}});
+}));
 router.delete('/:id',asyncHandler(async(req,res)=>{
   const id=accountId(req);
   if(id===req.user.id) fail('No puedes desactivar tu propia cuenta.',403);
