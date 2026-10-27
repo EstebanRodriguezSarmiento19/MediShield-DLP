@@ -1,71 +1,659 @@
-import {useCallback,useEffect,useState} from 'react';
-import {Alert,Box,Button,Checkbox,Chip,Dialog,DialogActions,DialogContent,DialogTitle,FormControlLabel,InputAdornment,
- MenuItem,Paper,Stack,Table,TableBody,TableCell,TableHead,TableRow,TextField,Typography} from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
+
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  InputAdornment,
+  MenuItem,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography
+} from '@mui/material';
+
 import SearchIconModule from '@mui/icons-material/Search';
+
 import icon from '../../shared/utils/icon.js';
 import api from '../../shared/services/api.js';
-import {useAuth} from '../auth/AuthContext.jsx';
-import {roleName} from '../../shared/utils/roles.js';
+import { useAuth } from '../auth/AuthContext.jsx';
+import { roleName } from '../../shared/utils/roles.js';
+
 const SearchIcon = icon(SearchIconModule);
 
-export default function RolesPage(){
- const {user}=useAuth();
- const [items,setItems]=useState([]),[search,setSearch]=useState(''),[roleFilter,setRoleFilter]=useState('');
- const [editing,setEditing]=useState(null),[form,setForm]=useState({role:'usuario',canManageUsers:false});
- const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+const blank = {
+  name: '',
+  email: '',
+  role: 'usuario',
+  canManageUsers: false
+};
 
- const load=useCallback(async()=>{
-  const params=new URLSearchParams();
-  if(search.trim())params.set('search',search.trim());
-  if(roleFilter)params.set('role',roleFilter);
-  try{const r=await api.get(`/roles${params.size?`?${params}`:''}`);setItems(r.data);setError('');}
-  catch(err){setError(err.message);}finally{setLoading(false);}
- },[search,roleFilter]);
- useEffect(()=>{const t=setTimeout(load,250);return()=>clearTimeout(t);},[load]);
+export default function RolesPage() {
+  const { user } = useAuth();
 
- function openEdit(account){setEditing(account);setForm({role:account.role,canManageUsers:account.canManageUsers});setNotice('');}
- async function save(event){
-  event.preventDefault();setBusy(true);setError('');
-  try{const r=await api.patch(`/roles/${editing.id}`,form);setNotice(r.data.message);setEditing(null);await load();}
-  catch(err){setError(err.message);}finally{setBusy(false);}
- }
- const unchanged=editing&&form.role===editing.role&&(form.role==='admin'||form.canManageUsers===(editing.role==='admin'?false:editing.canManageUsers));
+  const [items, setItems] = useState([]);
 
- return <Stack spacing={3}>
-  <Box><Typography variant="h1">Administrar roles</Typography>
-   <Typography color="text.secondary">Solo los administradores pueden ver y modificar los roles y permisos de las cuentas registradas.</Typography></Box>
-  {error&&<Alert severity="error">{error}</Alert>}{notice&&<Alert severity="success">{notice}</Alert>}
-  <Paper variant="outlined" sx={{p:2}}><Stack direction={{xs:'column',md:'row'}} spacing={2}>
-   <TextField label="Buscar por nombre o correo" value={search} onChange={e=>setSearch(e.target.value)} fullWidth inputProps={{maxLength:100}}
-    InputProps={{startAdornment:<InputAdornment position="start"><SearchIcon fontSize="small"/></InputAdornment>}}/>
-   <TextField select label="Filtrar por rol" value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} sx={{minWidth:220}}>
-    <MenuItem value="">Todos los roles</MenuItem>
-    {Object.entries(roleName).map(([value,label])=><MenuItem key={value} value={value}>{label}</MenuItem>)}
-   </TextField>
-  </Stack></Paper>
-  <Paper variant="outlined" sx={{overflowX:'auto'}}><Table><TableHead><TableRow>
-   {['Nombre','Correo','Rol','Gestiona cuentas','Estado','Acciones'].map(l=><TableCell key={l}>{l}</TableCell>)}
-  </TableRow></TableHead><TableBody>
-   {items.map(a=><TableRow key={a.id}>
-    <TableCell>{a.name}{a.id===user.id&&<Chip size="small" label="Tú" sx={{ml:1}}/>}</TableCell>
-    <TableCell>{a.email}</TableCell><TableCell>{roleName[a.role]}</TableCell>
-    <TableCell>{a.canManageUsers?'Sí':'No'}</TableCell>
-    <TableCell><Chip size="small" color={a.status==='activo'?'success':'default'} label={a.status==='activo'?'Activa':'Desactivada'}/></TableCell>
-    <TableCell><Button size="small" onClick={()=>openEdit(a)} disabled={a.id===user.id||a.status!=='activo'||busy}>Cambiar rol</Button></TableCell>
-   </TableRow>)}
-   {!loading&&!items.length&&<TableRow><TableCell colSpan={6} align="center">No hay usuarios que coincidan con la búsqueda.</TableCell></TableRow>}
-  </TableBody></Table></Paper>
-  <Dialog open={Boolean(editing)} onClose={()=>setEditing(null)} fullWidth maxWidth="xs"><Stack component="form" onSubmit={save}>
-   <DialogTitle>Cambiar rol de {editing?.name}</DialogTitle>
-   <DialogContent><Stack spacing={2} sx={{pt:1}}>
-    <TextField select label="Rol" value={form.role} onChange={e=>setForm(c=>({...c,role:e.target.value}))}>
-     {Object.entries(roleName).map(([value,label])=><MenuItem key={value} value={value}>{label}</MenuItem>)}
-    </TextField>
-    <FormControlLabel control={<Checkbox checked={form.role==='admin'||form.canManageUsers} disabled={form.role==='admin'}
-     onChange={e=>setForm(c=>({...c,canManageUsers:e.target.checked}))}/>} label="Puede gestionar cuentas (invitar, editar, desactivar)"/>
-    <Alert severity="warning">Al guardar se cerrarán las sesiones de esta persona y tendrá que iniciar sesión de nuevo.</Alert>
-   </Stack></DialogContent>
-   <DialogActions><Button onClick={()=>setEditing(null)}>Cancelar</Button><Button type="submit" variant="contained" disabled={busy||unchanged}>Guardar</Button></DialogActions>
-  </Stack></Dialog>
- </Stack>;
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+
+  const [form, setForm] = useState(blank);
+  const [editing, setEditing] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+
+    const params = new URLSearchParams();
+
+    if (search.trim()) {
+      params.set('search', search.trim());
+    }
+
+    if (roleFilter) {
+      params.set('role', roleFilter);
+    }
+
+    try {
+      const result = await api.get(
+        `/roles${params.size ? `?${params}` : ''}`
+      );
+
+      setItems(result.data);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, roleFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(load, 250);
+
+    return () => clearTimeout(timer);
+  }, [load]);
+
+  function change(field, value) {
+    setForm(current => ({
+      ...current,
+      [field]: value
+    }));
+  }
+
+  function openEdit(account) {
+    setEditing(account);
+
+    setForm({
+      name: account.name,
+      email: account.email,
+      role: account.role,
+      canManageUsers: account.canManageUsers
+    });
+
+    setError('');
+    setNotice('');
+  }
+
+  function closeEdit() {
+    setEditing(null);
+    setForm(blank);
+  }
+
+  async function run(action) {
+    setBusy(true);
+    setError('');
+    setNotice('');
+
+    try {
+      const response = await action();
+
+      setNotice(
+        response?.data?.message || 'Cambio guardado correctamente.'
+      );
+
+      await load();
+
+      return true;
+    } catch (err) {
+      setError(err.message);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function create(event) {
+    event.preventDefault();
+
+    const ok = await run(() =>
+      api.post('/users', form)
+    );
+
+    if (ok) {
+      setForm(blank);
+    }
+  }
+
+  async function save(event) {
+    event.preventDefault();
+
+    if (!editing) {
+      return;
+    }
+
+    /*
+     * IMPORTANTE:
+     * Aqui NO enviamos el campo role.
+     *
+     * De esta manera Administrar roles deja de cambiar
+     * el rol de una cuenta, tal como solicitaste.
+     */
+    const data = {
+      name: form.name,
+      email: form.email,
+      canManageUsers: form.canManageUsers
+    };
+
+    const ok = await run(() =>
+      api.patch(`/users/${editing.id}`, data)
+    );
+
+    if (ok) {
+      closeEdit();
+    }
+  }
+
+  async function deactivate(account) {
+    if (
+      !window.confirm(
+        `¿Desactivar la cuenta de ${account.name}? Se cerrarán sus sesiones y se conservará el historial de auditoría.`
+      )
+    ) {
+      return;
+    }
+
+    await run(() =>
+      api.delete(`/users/${account.id}`)
+    );
+  }
+
+  return (
+    <Stack spacing={3}>
+
+      {/* ENCABEZADO */}
+      <Box>
+        <Typography variant="h1">
+          Administrar roles
+        </Typography>
+
+        <Typography color="text.secondary">
+          Administra las cuentas, permisos y estados de los usuarios del sistema.
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error">
+          {error}
+        </Alert>
+      )}
+
+      {notice && (
+        <Alert severity="success">
+          {notice}
+        </Alert>
+      )}
+
+      {/* BUSQUEDA Y FILTROS */}
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+        >
+
+          <TextField
+            label="Buscar por nombre o correo"
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+            fullWidth
+            inputProps={{ maxLength: 100 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }}
+          />
+
+          <TextField
+            select
+            label="Filtrar por rol"
+            value={roleFilter}
+            onChange={event => setRoleFilter(event.target.value)}
+            sx={{ minWidth: 220 }}
+          >
+            <MenuItem value="">
+              Todos los roles
+            </MenuItem>
+
+            {Object.entries(roleName).map(
+              ([value, label]) => (
+                <MenuItem
+                  key={value}
+                  value={value}
+                >
+                  {label}
+                </MenuItem>
+              )
+            )}
+          </TextField>
+
+        </Stack>
+      </Paper>
+
+      {/* NUEVA CUENTA */}
+      <Paper
+        variant="outlined"
+        sx={{ p: 3 }}
+      >
+        <Stack
+          component="form"
+          onSubmit={create}
+          spacing={2}
+        >
+
+          <Typography variant="h2">
+            Nueva cuenta
+          </Typography>
+
+          <Typography
+            color="text.secondary"
+            variant="body2"
+          >
+            Crea una cuenta mediante una invitación privada.
+          </Typography>
+
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+          >
+
+            <TextField
+              label="Nombre"
+              value={form.name}
+              onChange={event =>
+                change('name', event.target.value)
+              }
+              inputProps={{ maxLength: 150 }}
+              required
+              fullWidth
+            />
+
+            <TextField
+              label="Correo real"
+              type="email"
+              value={form.email}
+              onChange={event =>
+                change('email', event.target.value)
+              }
+              inputProps={{ maxLength: 150 }}
+              required
+              fullWidth
+            />
+
+            <TextField
+              select
+              label="Rol"
+              value={form.role}
+              onChange={event =>
+                change('role', event.target.value)
+              }
+              fullWidth
+            >
+              {Object.entries(roleName).map(
+                ([value, label]) => (
+                  <MenuItem
+                    key={value}
+                    value={value}
+                  >
+                    {label}
+                  </MenuItem>
+                )
+              )}
+            </TextField>
+
+          </Stack>
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={
+                  form.role === 'admin' ||
+                  form.canManageUsers
+                }
+                disabled={form.role === 'admin'}
+                onChange={event =>
+                  change(
+                    'canManageUsers',
+                    event.target.checked
+                  )
+                }
+              />
+            }
+            label="Puede gestionar cuentas y permisos"
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={busy}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Crear y enviar invitación
+          </Button>
+
+        </Stack>
+      </Paper>
+
+      {/* TABLA DE CUENTAS */}
+      <Paper
+        variant="outlined"
+        sx={{ overflowX: 'auto' }}
+      >
+
+        <Table>
+
+          <TableHead>
+            <TableRow>
+              {[
+                'Nombre',
+                'Correo',
+                'Rol',
+                'Gestión de cuentas',
+                'Estado',
+                'Acciones'
+              ].map(label => (
+                <TableCell key={label}>
+                  {label}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+
+            {items.map(account => (
+              <TableRow key={account.id}>
+
+                <TableCell>
+                  {account.name}
+
+                  {account.id === user.id && (
+                    <Chip
+                      size="small"
+                      label="Tú"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </TableCell>
+
+                <TableCell>
+                  {account.email}
+                </TableCell>
+
+                <TableCell>
+                  {roleName[account.role]}
+                </TableCell>
+
+                <TableCell>
+                  {account.canManageUsers
+                    ? 'Sí'
+                    : 'No'}
+                </TableCell>
+
+                <TableCell>
+                  <Chip
+                    size="small"
+                    color={
+                      account.status === 'activo'
+                        ? 'success'
+                        : 'default'
+                    }
+                    label={
+                      account.status === 'activo'
+                        ? 'Activa'
+                        : 'Desactivada'
+                    }
+                  />
+                </TableCell>
+
+                <TableCell>
+
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    flexWrap="wrap"
+                  >
+
+                    {account.status === 'activo' ? (
+                      <>
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            openEdit(account)
+                          }
+                          disabled={busy}
+                        >
+                          Editar
+                        </Button>
+
+                        {account.id !== user.id && (
+                          <>
+                            <Button
+                              size="small"
+                              onClick={() =>
+                                run(() =>
+                                  api.post(
+                                    `/users/${account.id}/invite`,
+                                    {}
+                                  )
+                                )
+                              }
+                              disabled={busy}
+                            >
+                              Reenviar invitación
+                            </Button>
+
+                            <Button
+                              size="small"
+                              color="error"
+                              onClick={() =>
+                                deactivate(account)
+                              }
+                              disabled={busy}
+                            >
+                              Desactivar
+                            </Button>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          run(() =>
+                            api.post(
+                              `/users/${account.id}/reactivate`,
+                              {}
+                            )
+                          )
+                        }
+                        disabled={busy}
+                      >
+                        Reactivar e invitar
+                      </Button>
+                    )}
+
+                  </Stack>
+
+                </TableCell>
+
+              </TableRow>
+            ))}
+
+            {!loading && !items.length && (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  align="center"
+                >
+                  No hay usuarios que coincidan con la búsqueda.
+                </TableCell>
+              </TableRow>
+            )}
+
+          </TableBody>
+
+        </Table>
+
+      </Paper>
+
+      <Alert severity="info">
+        Desactivar una cuenta impide el acceso de inmediato.
+        Su registro se conserva porque las transferencias y la
+        auditoría deben seguir vinculadas a quien las realizó.
+      </Alert>
+
+      {/* EDITAR CUENTA */}
+      <Dialog
+        open={Boolean(editing)}
+        onClose={closeEdit}
+        fullWidth
+        maxWidth="sm"
+      >
+
+        <Stack
+          component="form"
+          onSubmit={save}
+        >
+
+          <DialogTitle>
+            Editar cuenta
+          </DialogTitle>
+
+          <DialogContent>
+
+            <Stack
+              spacing={2}
+              sx={{ pt: 1 }}
+            >
+
+              <TextField
+                label="Nombre"
+                value={form.name}
+                onChange={event =>
+                  change(
+                    'name',
+                    event.target.value
+                  )
+                }
+                inputProps={{ maxLength: 150 }}
+                required
+              />
+
+              <TextField
+                label="Correo"
+                type="email"
+                value={form.email}
+                onChange={event =>
+                  change(
+                    'email',
+                    event.target.value
+                  )
+                }
+                inputProps={{ maxLength: 150 }}
+                required
+              />
+
+              <TextField
+                label="Rol"
+                value={
+                  roleName[form.role] ||
+                  form.role
+                }
+                disabled
+              />
+
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={
+                      form.role === 'admin' ||
+                      form.canManageUsers
+                    }
+                    disabled={
+                      form.role === 'admin'
+                    }
+                    onChange={event =>
+                      change(
+                        'canManageUsers',
+                        event.target.checked
+                      )
+                    }
+                  />
+                }
+                label="Puede gestionar cuentas y permisos"
+              />
+
+              <Alert severity="info">
+                El rol no se puede cambiar desde esta sección.
+                Esta pantalla administra la cuenta y sus permisos
+                sin modificar el rol asignado.
+              </Alert>
+
+            </Stack>
+
+          </DialogContent>
+
+          <DialogActions>
+
+            <Button
+              onClick={closeEdit}
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={busy}
+            >
+              Guardar cambios
+            </Button>
+
+          </DialogActions>
+
+        </Stack>
+
+      </Dialog>
+
+    </Stack>
+  );
 }
