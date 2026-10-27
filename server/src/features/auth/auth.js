@@ -141,7 +141,7 @@ router.post('/register',sameOrigin,asyncHandler(async(req,res) => {
   await transaction(async cx=>{
     await cx.execute('DELETE FROM registro_pendiente WHERE fecha_expiracion<UTC_TIMESTAMP(3)');
     const [[existing]]=await cx.execute('SELECT id_usuario FROM usuario WHERE correo=?',[address]);
-    if(existing) return;
+    if(existing) fail('Ya existe una cuenta con ese correo. Inicia sesión.',409);
     token=crypto.randomBytes(32).toString('hex');
     const [[pending]]=await cx.execute('SELECT correo FROM registro_pendiente WHERE correo=? FOR UPDATE',[address]);
     if(pending) await cx.execute(`UPDATE registro_pendiente SET nombre=?,token_hash=?,fecha_creacion=UTC_TIMESTAMP(3),
