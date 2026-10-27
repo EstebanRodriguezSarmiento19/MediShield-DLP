@@ -1,0 +1,274 @@
+[
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\app.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\config\\env.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\db\\pool.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\audit\\audit.service.js",
+    "messages": [
+      {
+        "ruleId": "security/detect-object-injection",
+        "severity": 1,
+        "message": "Function Call Object Injection Sink",
+        "line": 6,
+        "column": 123,
+        "endLine": 6,
+        "endColumn": 131
+      }
+    ],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 1,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\auth\\auth.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\auth\\password.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\dlp\\dlp.controller.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\dlp\\dlp.demoRecipients.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\dlp\\dlp.routes.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\dlp\\dlp.rules.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\dlp\\dlp.service.js",
+    "messages": [
+      {
+        "ruleId": "security/detect-non-literal-regexp",
+        "severity": 1,
+        "message": "Found non-literal argument to RegExp Constructor",
+        "line": 31,
+        "column": 30,
+        "endLine": 31,
+        "endColumn": 80
+      }
+    ],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 1,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\dlp\\dlp.store.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\health\\health.controller.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\health\\health.routes.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\mail\\mail.routes.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\features\\security\\security.routes.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\middleware\\errorHandler.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\middleware\\notFound.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\server.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\shared\\errors\\AppError.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\shared\\utils\\asyncHandler.js",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Pato_Esteban\\Universidad\\2026 II\\Proyecto Integrador\\medishield-dlp-beta01\\medishield-dlp\\server\\src\\shared\\validation.js",
+    "messages": [
+      {
+        "ruleId": "security/detect-unsafe-regex",
+        "severity": 1,
+        "message": "Unsafe Regular Expression",
+        "line": 14,
+        "column": 8,
+        "endLine": 14,
+        "endColumn": 112
+      }
+    ],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 1,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  }
+]

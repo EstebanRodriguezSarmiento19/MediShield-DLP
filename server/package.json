@@ -1,0 +1,35 @@
+{
+  "name": "medishield-dlp-server",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Backend de MediShield DLP",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js",
+    "db:setup": "node scripts/setup-lab.mjs",
+    "db:setup:cloud": "node scripts/setup-cloud.mjs",
+    "db:migrate:cloud": "node scripts/migrate-cloud.mjs",
+    "user:create:cloud": "node scripts/create-cloud-user.mjs",
+    "user:sql": "node scripts/print-user-sql.mjs",
+    "verify:lab": "node scripts/verify-lab.mjs",
+    "verify:accounts:lab": "node scripts/verify-accounts-lab.mjs",
+    "smtp:lab": "node scripts/smtp-lab.mjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "mysql2": "^3.11.0",
+    "nodemailer": "^10.0.13"
+  },
+  "devDependencies": {
+    "eslint": "^10.11.0",
+    "eslint-plugin-security": "^4.2.0",
+    "smtp-server": "^3.19.16"
+  }
+}
