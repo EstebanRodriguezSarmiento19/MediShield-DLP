@@ -16,6 +16,9 @@ const env = {
   production: process.env.NODE_ENV === 'production',
   allowPublicRegistration: process.env.ALLOW_PUBLIC_REGISTRATION !== 'false' &&
     Boolean(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL),
+  // Solo laboratorio: permite crear la cuenta en el mismo formulario (nombre, correo y contraseña)
+  // sin confirmar por correo. Nunca se activa con NODE_ENV=production.
+  directRegistration: process.env.NODE_ENV !== 'production' && process.env.ALLOW_DIRECT_REGISTRATION === 'true',
   auditKey: process.env.AUDIT_HMAC_KEY || '',
   smtp: { host:'127.0.0.1', port:Number(process.env.SMTP_PORT || 1025), enabled:process.env.SMTP_ENABLED === 'true' },
   recoveryMail: {

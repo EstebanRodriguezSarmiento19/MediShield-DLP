@@ -11,11 +11,12 @@ import {
   Alert
 } from '@mui/material';
 import { Security as SecurityIcon } from '@mui/icons-material';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -129,6 +130,12 @@ export default function LoginPage() {
           >
             Acceso al laboratorio de protección de datos médicos.
           </Typography>
+
+          {location.state?.registered && !error && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {location.state.message || 'Cuenta creada. Ya puedes iniciar sesión.'}
+            </Alert>
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>

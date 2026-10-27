@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Card, CardContent, TextField, Button, Typography, Link as MuiLink, Alert } from '@mui/material';
 import { Security as SecurityIcon } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
+import api from '../../shared/services/api.js';
 
 export default function ForgotPasswordPage() {
   const [correo, setCorreo] = useState('');
@@ -14,11 +15,10 @@ export default function ForgotPasswordPage() {
     setMensaje('');
 
     try {
-      // TU LÓGICA DE API AQUÍ
-      console.log('Solicitando recuperación para:', correo);
-      setMensaje('Si el correo está registrado, recibirás un enlace de recuperación en breve.');
+      const r = await api.post('/auth/password/forgot', { email: correo.trim() });
+      setMensaje(r.data.message);
     } catch (err) {
-      setError('Hubo un problema al procesar la solicitud.');
+      setError(err.message || 'Hubo un problema al procesar la solicitud.');
     }
   };
 
