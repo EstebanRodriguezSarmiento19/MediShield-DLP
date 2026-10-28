@@ -3,10 +3,7 @@ import pool, { transaction } from '../../db/pool.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { appendAudit } from '../audit/audit.service.js';
 import { object, email, text, fail } from '../../shared/validation.js';
-<<<<<<< HEAD
 import { validatePassword } from '../../shared/passwordPolicy.js';
-=======
->>>>>>> origin/main
 import asyncHandler from '../../shared/utils/asyncHandler.js';
 
 /** Perfil propio: disponible para cualquier usuario autenticado. */
@@ -57,11 +54,7 @@ router.post('/password', asyncHandler(async (req, res) => {
   object(req.body, ['currentPassword', 'newPassword']);
   const { currentPassword, newPassword } = req.body;
   if (typeof currentPassword !== 'string' || currentPassword.length < 1 || currentPassword.length > 128) fail('Contraseña actual inválida.');
-<<<<<<< HEAD
   validatePassword(newPassword);
-=======
-  if (typeof newPassword !== 'string' || newPassword.length < 15 || newPassword.length > 128) fail('La nueva contraseña debe tener entre 15 y 128 caracteres.');
->>>>>>> origin/main
   if (newPassword === currentPassword) fail('La nueva contraseña debe ser distinta de la actual.');
   const [[row]] = await pool.execute('SELECT clave_hash FROM usuario WHERE id_usuario=?', [req.user.id]);
   if (!await verifyPassword(currentPassword, row?.clave_hash)) fail('La contraseña actual no es correcta.', 403);

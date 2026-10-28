@@ -13,10 +13,7 @@ import {
 import { Security as SecurityIcon } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-<<<<<<< HEAD
 import { PasswordField } from '../../shared/components/PasswordFields.jsx';
-=======
->>>>>>> origin/main
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -162,18 +159,10 @@ export default function LoginPage() {
               inputProps={{ maxLength: 254 }}
             />
 
-<<<<<<< HEAD
             <PasswordField
               fullWidth
               label="Contraseña"
               name="password"
-=======
-            <TextField
-              fullWidth
-              label="Contraseña"
-              name="password"
-              type="password"
->>>>>>> origin/main
               value={formData.password}
               onChange={handleChange}
               margin="normal"

@@ -77,19 +77,11 @@ export function AuthProvider({ children }) {
     return r.data.user;
   };
 
-<<<<<<< HEAD
   // En modo laboratorio (registro directo) la contraseña viaja en la misma solicitud.
   // En modo con confirmación por correo se omite y se elige desde el enlace recibido.
   const register = async (name, email, password) => {
     const body = password === undefined ? { name, email } : { name, email, password };
     const r = await api.post('/auth/register', body);
-=======
-  const register = async (name, email) => {
-    const r = await api.post('/auth/register', {
-      name,
-      email
-    });
->>>>>>> origin/main
 
     return r.data.message;
   };

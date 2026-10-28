@@ -3,11 +3,8 @@ import {Alert,Box,Button,Checkbox,Chip,Dialog,DialogActions,DialogContent,Dialog
  MenuItem,Paper,Stack,Table,TableBody,TableCell,TableHead,TableRow,TextField,Typography} from '@mui/material';
 import api from '../../shared/services/api.js';
 import {useAuth} from '../auth/AuthContext.jsx';
-<<<<<<< HEAD
 import {PasswordField,PasswordRequirements} from '../../shared/components/PasswordFields.jsx';
 import {isPasswordValid} from '../../shared/utils/passwordPolicy.js';
-=======
->>>>>>> origin/main
 
 const blank={name:'',email:'',role:'usuario',canManageUsers:false};
 const roleName={admin:'Administrador',analista:'Analista',usuario:'Usuario'};
@@ -28,10 +25,7 @@ export default function UsersPage(){
  async function save(event){event.preventDefault();const ok=await run(()=>api.patch(`/users/${editing.id}`,form));if(ok)closeEdit();}
  async function changePassword(event){
   event.preventDefault();
-<<<<<<< HEAD
   if(!isPasswordValid(newPassword)){setError('La nueva contraseña no cumple los requisitos.');return;}
-=======
->>>>>>> origin/main
   const ok=await run(()=>api.post(`/users/${passwordTarget.id}/password`,{newPassword}));
   if(ok)closePassword();
  }
@@ -85,14 +79,9 @@ export default function UsersPage(){
    <Stack component="form" onSubmit={changePassword}>
     <DialogTitle>Cambiar contraseña de {passwordTarget?.name}</DialogTitle>
     <DialogContent><Stack spacing={2} sx={{pt:1}}>
-<<<<<<< HEAD
      <PasswordField label="Nueva contraseña" autoComplete="new-password" value={newPassword} onChange={event=>setNewPassword(event.target.value)} required/>
      <PasswordRequirements password={newPassword}/>
      <Alert severity="info">Al guardar se cerrarán las sesiones del usuario.</Alert>
-=======
-     <TextField label="Nueva contraseña" type="password" value={newPassword} onChange={event=>setNewPassword(event.target.value)} inputProps={{minLength:15,maxLength:128}} helperText="Entre 15 y 128 caracteres." required/>
-     <Alert severity="info">La contraseña de un solo carácter se rechazará. Al guardar se cerrarán las sesiones del usuario.</Alert>
->>>>>>> origin/main
     </Stack></DialogContent>
     <DialogActions><Button onClick={closePassword}>Cancelar</Button><Button type="submit" variant="contained" disabled={busy}>Guardar contraseña</Button></DialogActions>
    </Stack>
