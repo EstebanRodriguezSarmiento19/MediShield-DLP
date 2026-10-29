@@ -25,10 +25,10 @@ export async function saveAnalysis(cx,result,user,ip) {
 }
 export const decodeResult = row => ({...(typeof row.resultado==='string'?JSON.parse(row.resultado):row.resultado),status:row.estado,ownerId:row.id_usuario});
 export async function getRecentAnalyses(user,limit) {
-  const [rows]=await pool.query('SELECT * FROM transferencia WHERE (?=1 OR id_usuario=?) ORDER BY fecha_creacion DESC,id DESC LIMIT ?',[user.role!=='usuario'?1:0,user.id,limit]);
+  const [rows]=await pool.query('SELECT * FROM transferencia WHERE (?=1 OR id_usuario=?) ORDER BY fecha_creacion DESC,id DESC LIMIT ?',[user.permissions.includes('transferencias.ver_todas')?1:0,user.id,limit]);
   return rows.map(decodeResult);
 }
 export async function getDlpStats(user) {
-  const [[row]]=await pool.execute("SELECT COUNT(*) total,COALESCE(SUM(decision='PERMITIR'),0) allowed,COALESCE(SUM(decision='ALERTAR'),0) alerted,COALESCE(SUM(decision='BLOQUEAR'),0) blocked,COALESCE(SUM(estado='ENVIADA'),0) sent FROM transferencia WHERE (?=1 OR id_usuario=?)",[user.role!=='usuario'?1:0,user.id]);
+  const [[row]]=await pool.execute("SELECT COUNT(*) total,COALESCE(SUM(decision='PERMITIR'),0) allowed,COALESCE(SUM(decision='ALERTAR'),0) alerted,COALESCE(SUM(decision='BLOQUEAR'),0) blocked,COALESCE(SUM(estado='ENVIADA'),0) sent FROM transferencia WHERE (?=1 OR id_usuario=?)",[user.permissions.includes('transferencias.ver_todas')?1:0,user.id]);
   return Object.fromEntries(Object.entries(row).map(([k,v])=>[k,Number(v)]));
 }

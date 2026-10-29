@@ -18,6 +18,8 @@ import ProfilePage from '../features/profile/ProfilePage.jsx';
 import PreferencesPage from '../features/preferences/PreferencesPage.jsx';
 import RolesPage from '../features/roles/RolesPage.jsx';
 import RouteErrorPage from '../shared/components/RouteErrorPage.jsx';
+
+// Cada sección exige un permiso del catálogo; el servidor aplica la misma regla en cada endpoint.
 export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvider>,errorElement:<RouteErrorPage/>,children:[
  {path:'/login',element:<LoginPage/>},
  {path:'/register',element:<RegisterPage/>},
@@ -29,11 +31,12 @@ export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvid
   {path:'dashboard',element:<DashboardPage/>},{path:'recipients',element:<RecipientsPage/>},
   {path:'profile',element:<ProfilePage/>},{path:'preferences',element:<PreferencesPage/>},{path:'settings',element:<Navigate to="/profile" replace/>},
   {element:<ProtectedRoute roles={['admin']}/>,children:[{path:'admin/roles',element:<RolesPage/>}]},
-  {element:<ProtectedRoute manageUsers/>,children:[{path:'users',element:<UsersPage/>}]},
-  {element:<ProtectedRoute roles={['admin','usuario']}/>,children:[{path:'transfers',element:<TransfersPage/>}]},
-  {element:<ProtectedRoute roles={['admin','analista']}/>,children:[
-   {path:'alerts',element:<AlertsPage/>},{path:'audit',element:<AuditPage/>},{path:'rules',element:<RulesPage/>},{path:'security-validation',element:<SecurityValidationPage/>}
-  ]}
+  {element:<ProtectedRoute permission="usuarios.gestionar"/>,children:[{path:'users',element:<UsersPage/>}]},
+  {element:<ProtectedRoute permission="transferencias.enviar"/>,children:[{path:'transfers',element:<TransfersPage/>}]},
+  {element:<ProtectedRoute permission="alertas.ver"/>,children:[{path:'alerts',element:<AlertsPage/>}]},
+  {element:<ProtectedRoute permission="auditoria.ver"/>,children:[{path:'audit',element:<AuditPage/>}]},
+  {element:<ProtectedRoute permission="reglas.ver"/>,children:[{path:'rules',element:<RulesPage/>}]},
+  {element:<ProtectedRoute permission="seguridad.ver"/>,children:[{path:'security-validation',element:<SecurityValidationPage/>}]}
  ]}]},
  {path:'*',element:<Navigate to="/dashboard" replace/>}
 ]}]);

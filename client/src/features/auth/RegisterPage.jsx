@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Box, Card, CardContent, TextField, Button, Typography, Link as MuiLink, Alert } from '@mui/material';
-import { Security as SecurityIcon } from '@mui/icons-material';
+import { Alert, Box, Button, Link as MuiLink, Stack, TextField, Typography } from '@mui/material';
+import { ArrowForward } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { PasswordField, PasswordRequirements } from '../../shared/components/PasswordFields.jsx';
+import { AuthLayout, FieldLabel } from '../../shared/components/auth/AuthLayout.jsx';
 import { isPasswordValid } from '../../shared/utils/passwordPolicy.js';
 import api from '../../shared/services/api.js';
 import { useAuth } from './AuthContext.jsx';
@@ -24,6 +25,7 @@ export default function RegisterPage() {
 
   const direct = Boolean(config?.directRegistration);
   const available = direct || Boolean(config?.allowPublicRegistration);
+  const passwordMismatch = Boolean(formData.confirmPassword) && formData.confirmPassword !== formData.password;
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -64,59 +66,105 @@ export default function RegisterPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-      <Card sx={{ maxWidth: 450, width: '100%', p: 2 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-            <SecurityIcon sx={{ color: 'primary.main', mr: 1.5, fontSize: 36 }} />
-            <Typography variant="h3" component="h1" sx={{ fontWeight: 800, background: 'linear-gradient(90deg, #00E5FF 0%, #2979FF 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              MediShield DLP
-            </Typography>
-          </Box>
+    <AuthLayout
+      eyebrow="Registro seguro"
+      title="Crea tu cuenta."
+      subtitle="Registro en el laboratorio de protección de datos médicos."
+    >
+      {config && !available && (
+        <Alert severity="warning" sx={{ mb: 2.5 }}>
+          El registro público no está habilitado. Solicita una invitación a un administrador.
+        </Alert>
+      )}
+      {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
+      {info && <Alert severity="success" sx={{ mb: 2.5 }}>{info}</Alert>}
 
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-            Registro en el laboratorio de protección de datos médicos.
+      <Box component="form" onSubmit={handleSubmit}>
+        <FieldLabel htmlFor="register-nombre">Nombre completo</FieldLabel>
+        <TextField
+          id="register-nombre"
+          fullWidth
+          name="nombre"
+          value={formData.nombre}
+          onChange={handleChange}
+          required
+          autoComplete="name"
+          inputProps={{ maxLength: 150 }}
+        />
+
+        <FieldLabel htmlFor="register-correo">Correo de trabajo</FieldLabel>
+        <TextField
+          id="register-correo"
+          fullWidth
+          name="correo"
+          type="email"
+          placeholder="nombre@institucion.co"
+          value={formData.correo}
+          onChange={handleChange}
+          required
+          autoComplete="email"
+          inputProps={{ maxLength: 150 }}
+        />
+
+        {direct && (
+          <>
+            <FieldLabel htmlFor="register-password">Contraseña</FieldLabel>
+            <PasswordField
+              id="register-password"
+              fullWidth
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              autoComplete="new-password"
+            />
+            <Box sx={{ mt: 1.5, p: 2, borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}`, bgcolor: 'action.hover' }}>
+              <PasswordRequirements password={formData.password} />
+            </Box>
+
+            <FieldLabel htmlFor="register-confirm">Confirmar contraseña</FieldLabel>
+            <PasswordField
+              id="register-confirm"
+              fullWidth
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              autoComplete="new-password"
+              error={passwordMismatch}
+              helperText={passwordMismatch ? 'Las contraseñas no coinciden.' : ' '}
+            />
+          </>
+        )}
+
+        {config && !direct && available && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5 }}>
+            Te enviaremos un enlace para confirmar tu correo y elegir tu contraseña.
           </Typography>
+        )}
 
-          {config && !available && (
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              El registro público no está habilitado. Solicita una invitación a un administrador.
-            </Alert>
-          )}
-          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-          {info && <Alert severity="success" sx={{ mb: 3 }}>{info}</Alert>}
+        <Button
+          fullWidth
+          type="submit"
+          variant="contained"
+          color="primary"
+          size="large"
+          disabled={loading || !available}
+          endIcon={<ArrowForward />}
+          sx={{ mt: 3.5, py: 1.4, fontSize: '0.98rem' }}
+        >
+          {loading ? 'Registrando...' : (direct ? 'Crear cuenta' : 'Solicitar registro')}
+        </Button>
+      </Box>
 
-          <form onSubmit={handleSubmit}>
-            <TextField fullWidth label="Nombre completo" name="nombre" value={formData.nombre} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="name" />
-            <TextField fullWidth label="Correo electrónico" name="correo" type="email" value={formData.correo} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="email" />
-            {direct && (
-              <>
-                <PasswordField fullWidth label="Contraseña" name="password" value={formData.password} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="new-password" />
-                <PasswordRequirements password={formData.password} />
-                <PasswordField fullWidth label="Confirmar contraseña" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} margin="normal" required variant="outlined" autoComplete="new-password" error={Boolean(formData.confirmPassword) && formData.confirmPassword !== formData.password} helperText={formData.confirmPassword && formData.confirmPassword !== formData.password ? 'Las contraseñas no coinciden.' : ' '} />
-              </>
-            )}
-            {config && !direct && available && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Te enviaremos un enlace para confirmar tu correo y elegir tu contraseña.
-              </Typography>
-            )}
-
-            <Button fullWidth type="submit" variant="contained" color="primary" disabled={loading || !available} sx={{ mt: 3, mb: 2, py: 1.5 }}>
-              {loading ? 'Registrando...' : (direct ? 'Registrarse' : 'Solicitar registro')}
-            </Button>
-          </form>
-
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              ¿Ya tienes cuenta?{' '}
-              <MuiLink component={Link} to="/login" color="primary" sx={{ fontWeight: 600, textDecoration: 'none' }}>
-                Inicia sesión aquí
-              </MuiLink>
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
-    </Box>
+      <Box sx={{ textAlign: 'center', mt: 3 }}>
+        <Typography variant="body2" color="text.secondary">
+          ¿Ya tienes cuenta?{' '}
+          <MuiLink component={Link} to="/login" underline="none" sx={{ color: 'primary.main', fontWeight: 600 }}>
+            Inicia sesión aquí
+          </MuiLink>
+        </Typography>
+      </Box>
+    </AuthLayout>
   );
 }

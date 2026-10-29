@@ -106,6 +106,8 @@ try {
     gestor_usuarios: 'SELECT, INSERT, DELETE',
     recuperacion_clave: 'SELECT, INSERT, UPDATE, DELETE',
     registro_pendiente: 'SELECT, INSERT, UPDATE, DELETE',
+    rol_personalizado: 'SELECT, INSERT, UPDATE, DELETE',
+    rol_permiso: 'SELECT, INSERT, DELETE',
     error_log: 'INSERT',
   };
   for (const [table, privileges] of Object.entries(grants)) {

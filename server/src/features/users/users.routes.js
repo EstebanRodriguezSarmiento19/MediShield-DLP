@@ -11,9 +11,14 @@ import asyncHandler from '../../shared/utils/asyncHandler.js';
 
 const router=Router();
 const adminOnly=msg=>Object.assign(new Error(msg),{statusCode:403,isOperational:true});
+// managerFlag: concesión directa de gestión de cuentas (tabla gestor_usuarios).
+// canManageUsers: permiso efectivo, que también puede venir de un rol personalizado.
 const accountQuery=`SELECT u.id_usuario AS id,u.nombre AS name,u.correo AS email,u.rol AS role,
-  u.estado AS status,u.fecha_creacion AS createdAt,
-  (u.rol='admin' OR EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario)) AS canManageUsers
+  u.estado AS status,u.fecha_creacion AS createdAt,u.id_rol AS customRoleId,
+  (SELECT r.nombre FROM rol_personalizado r WHERE r.id_rol=u.id_rol) AS customRoleName,
+  EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario) AS managerFlag,
+  (u.rol='admin' OR EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario)
+    OR EXISTS(SELECT 1 FROM rol_permiso p WHERE p.id_rol=u.id_rol AND p.permiso='usuarios.gestionar')) AS canManageUsers
   FROM usuario u`;
 const emailHash=value=>crypto.createHmac('sha256',env.auditKey).update(value).digest('hex');
 const randomPassword=()=>crypto.randomBytes(32).toString('base64url');
@@ -30,9 +35,20 @@ function role(value){
   if(!['admin','analista','usuario'].includes(value)) fail('Rol inválido.');
   return value;
 }
-function managerFlag(value){
+function managerFlagValue(value){
   if(typeof value!=='boolean') fail('Permiso de gestión inválido.');
   return value;
+}
+// Valor recibido para un rol personalizado: vacío equivale a «ninguno».
+const normalizeRoleId=value=>(value===undefined||value===null||value==='')?null:Number(value);
+// Solo un administrador puede asignar roles personalizados; el valor debe existir.
+async function customRoleId(requested,actorRole){
+  if(requested===null) return null;
+  if(actorRole!=='admin') throw adminOnly('Solo un administrador puede asignar roles personalizados.');
+  if(!Number.isSafeInteger(requested)||requested<1) fail('Rol personalizado inválido.');
+  const [[row]]=await pool.execute('SELECT id_rol FROM rol_personalizado WHERE id_rol=?',[requested]);
+  if(!row) fail('El rol personalizado no existe.',404);
+  return requested;
 }
 async function setManager(cx,id,enabled,actor){
   if(enabled) await cx.execute('INSERT IGNORE INTO gestor_usuarios(id_usuario,concedido_por) VALUES (?,?)',[id,actor]);
@@ -52,32 +68,35 @@ async function deliver(address,name,token,invitation){
 router.use(manager);
 router.get('/',asyncHandler(async(_req,res)=>{
   const [rows]=await pool.execute(`${accountQuery} ORDER BY u.id_usuario`);
-  res.json({success:true,data:rows.map(row=>({...row,canManageUsers:Boolean(row.canManageUsers)}))});
+  res.json({success:true,data:rows.map(row=>({...row,canManageUsers:Boolean(row.canManageUsers),managerFlag:Boolean(row.managerFlag)}))});
 }));
 router.post('/',asyncHandler(async(req,res)=>{
-  object(req.body,['name','email','role','canManageUsers']);
+  object(req.body,['name','email','role','canManageUsers','customRoleId']);
   const name=text(req.body.name,'Nombre',150),address=email(req.body.email),assignedRole=role(req.body.role);
-  const canManage=managerFlag(req.body.canManageUsers);
+  const gestorInput=managerFlagValue(req.body.canManageUsers);
+  // El administrador ya tiene todos los permisos: la marca de gestor no aplica.
+  const gestor=assignedRole==='admin'?false:gestorInput;
   if(name.length<2||address.length>150) fail('Nombre o correo inválido.');
-  if(req.user.role!=='admin'&&(assignedRole!=='usuario'||canManage)) throw adminOnly('Solo un administrador puede asignar roles o permisos.');
+  if(req.user.role!=='admin'&&(assignedRole!=='usuario'||gestor)) throw adminOnly('Solo un administrador puede asignar roles o permisos.');
+  const customId=assignedRole==='admin'?null:await customRoleId(normalizeRoleId(req.body.customRoleId),req.user.role);
   if(!recoveryConfigured()) fail('Configura el proveedor de correo antes de crear cuentas.',503);
   const encoded=await hashPassword(randomPassword());
   let id,token;
   try {
     await transaction(async cx=>{
-      const [result]=await cx.execute("INSERT INTO usuario(nombre,correo,clave_hash,rol,estado) VALUES (?,?,?,?,'activo')",[name,address,encoded,assignedRole]);
+      const [result]=await cx.execute("INSERT INTO usuario(nombre,correo,clave_hash,rol,estado,id_rol) VALUES (?,?,?,?,'activo',?)",[name,address,encoded,assignedRole,customId]);
       id=result.insertId;
-      if(canManage&&assignedRole!=='admin') await setManager(cx,id,true,req.user.id);
+      if(gestor&&assignedRole!=='admin') await setManager(cx,id,true,req.user.id);
       token=await issueRecoveryToken(cx,id);
       await appendAudit(cx,{actor:req.user.id,action:'USER_CREATED',resource:`usuario:${id}`,ip:req.ip,
-        details:{emailHash:emailHash(address),role:assignedRole,canManage}});
+        details:{emailHash:emailHash(address),role:assignedRole,customRoleId:customId,canManage:gestor}});
     });
   } catch(err){if(err?.code==='ER_DUP_ENTRY') fail('Ya existe una cuenta con ese correo.',409);throw err;}
   const emailSent=await deliver(address,name,token,true);
   res.status(201).json({success:true,data:{id,emailSent,message:emailSent?'Invitación enviada.':'Cuenta creada. El envío falló; usa «Reenviar invitación».'}});
 }));
 router.patch('/:id',asyncHandler(async(req,res)=>{
-  object(req.body,['name','email','role','canManageUsers']);
+  object(req.body,['name','email','role','canManageUsers','customRoleId']);
   if(!Object.keys(req.body).length) fail('No hay cambios.');
   const id=accountId(req);
   let destination,token,emailChanged=false;
@@ -89,29 +108,39 @@ router.patch('/:id',asyncHandler(async(req,res)=>{
       const name=req.body.name===undefined?target.name:text(req.body.name,'Nombre',150);
       const address=req.body.email===undefined?target.email:email(req.body.email);
       const assignedRole=req.body.role===undefined?target.role:role(req.body.role);
-      const canManage=req.body.canManageUsers===undefined?Boolean(target.canManageUsers):managerFlag(req.body.canManageUsers);
+      const gestorInput=req.body.canManageUsers===undefined?Boolean(target.managerFlag):managerFlagValue(req.body.canManageUsers);
+      const gestor=assignedRole==='admin'?false:gestorInput;
+      const currentCustom=target.customRoleId??null;
+      let customId=currentCustom;
+      // Solo se valida el rol personalizado si cambia: un gestor puede editar una cuenta sin tocar su rol.
+      if(req.body.customRoleId!==undefined){
+        const requested=normalizeRoleId(req.body.customRoleId);
+        if(requested!==currentCustom) customId=await customRoleId(requested,req.user.role);
+      }
+      if(assignedRole==='admin') customId=null;
       if(name.length<2||address.length>150) fail('Nombre o correo inválido.');
       emailChanged=address!==target.email;
-      if(id===req.user.id&&(emailChanged||assignedRole!==target.role||canManage!==Boolean(target.canManageUsers)))
+      const permissionsChanged=assignedRole!==target.role||gestor!==Boolean(target.managerFlag)||customId!==currentCustom;
+      if(id===req.user.id&&(emailChanged||permissionsChanged))
         fail('No puedes cambiar tu propio correo o permisos desde esta pantalla.',403);
-      if(req.user.role!=='admin'&&(assignedRole!==target.role||canManage!==Boolean(target.canManageUsers))) throw adminOnly('Solo un administrador puede modificar roles o permisos.');
+      if(req.user.role!=='admin'&&permissionsChanged) throw adminOnly('Solo un administrador puede modificar roles o permisos.');
       if(emailChanged&&!recoveryConfigured()) fail('Configura el proveedor de correo antes de cambiar direcciones.',503);
       await ensureNotLastAdmin(cx,target,assignedRole);
-      const permissionsChanged=assignedRole!==target.role||canManage!==Boolean(target.canManageUsers);
       if(emailChanged){
         const encoded=await hashPassword(randomPassword());
-        await cx.execute('UPDATE usuario SET nombre=?,correo=?,rol=?,clave_hash=? WHERE id_usuario=?',[name,address,assignedRole,encoded,id]);
+        await cx.execute('UPDATE usuario SET nombre=?,correo=?,rol=?,id_rol=?,clave_hash=? WHERE id_usuario=?',[name,address,assignedRole,customId,encoded,id]);
         token=await issueRecoveryToken(cx,id);
         destination={address,name};
-      } else await cx.execute('UPDATE usuario SET nombre=?,rol=? WHERE id_usuario=?',[name,assignedRole,id]);
-      await setManager(cx,id,canManage&&assignedRole!=='admin',req.user.id);
+      } else await cx.execute('UPDATE usuario SET nombre=?,rol=?,id_rol=? WHERE id_usuario=?',[name,assignedRole,customId,id]);
+      await setManager(cx,id,gestor&&assignedRole!=='admin',req.user.id);
       if(permissionsChanged||emailChanged){
         await cx.execute('DELETE FROM sesion_web WHERE id_usuario=?',[id]);
         if(!emailChanged) await invalidateRecovery(cx,id);
       }
       await appendAudit(cx,{actor:req.user.id,action:'USER_UPDATED',resource:`usuario:${id}`,ip:req.ip,
         details:{oldEmailHash:emailHash(target.email),newEmailHash:emailHash(address),fromRole:target.role,toRole:assignedRole,
-          canManage,emailChanged,sessionsRevoked:permissionsChanged||emailChanged}});
+          fromCustomRoleId:currentCustom,toCustomRoleId:customId,canManage:gestor,emailChanged,
+          sessionsRevoked:permissionsChanged||emailChanged}});
     });
   } catch(err){if(err?.code==='ER_DUP_ENTRY') fail('Ya existe una cuenta con ese correo.',409);throw err;}
   const emailSent=destination?await deliver(destination.address,destination.name,token,true):null;

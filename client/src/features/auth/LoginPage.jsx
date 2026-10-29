@@ -1,19 +1,10 @@
-
 import { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Typography,
-  Link as MuiLink,
-  Alert
-} from '@mui/material';
-import { Security as SecurityIcon } from '@mui/icons-material';
+import { Alert, Box, Button, Link as MuiLink, Stack, TextField } from '@mui/material';
+import { ArrowForward } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import { useAuth } from './AuthContext.jsx';
 import { PasswordField } from '../../shared/components/PasswordFields.jsx';
+import { AuthLayout, FieldLabel } from '../../shared/components/auth/AuthLayout.jsx';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -78,155 +69,85 @@ export default function LoginPage() {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        p: 2,
-        bgcolor: 'background.default'
-      }}
+    <AuthLayout
+      eyebrow="Acceso seguro"
+      title="Bienvenido de nuevo."
+      subtitle="Ingresa para revisar las transferencias y alertas de tu organización."
     >
-      <Card sx={{ maxWidth: 420, width: '100%', p: 2 }}>
-        <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 2.5
-            }}
-          >
-            <SecurityIcon
-              sx={{
-                color: 'primary.main',
-                mr: 1,
-                fontSize: 30
-              }}
-            />
+      {location.state?.registered && !error && (
+        <Alert severity="success" sx={{ mb: 2.5 }}>
+          {location.state.message || 'Cuenta creada. Ya puedes iniciar sesión.'}
+        </Alert>
+      )}
 
-            <Typography
-              variant="h3"
-              component="h1"
-              sx={{
-                fontWeight: 800,
-                background:
-                  'linear-gradient(90deg, #00E5FF 0%, #2979FF 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}
-            >
-              MediShield DLP
-            </Typography>
-          </Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2.5 }}>
+          {error}
+        </Alert>
+      )}
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              mb: 3,
-              textAlign: 'center'
-            }}
-          >
-            Acceso al laboratorio de protección de datos médicos.
-          </Typography>
+      <Box component="form" onSubmit={handleSubmit}>
+        <FieldLabel htmlFor="login-correo">Correo de trabajo</FieldLabel>
+        <TextField
+          id="login-correo"
+          fullWidth
+          name="correo"
+          type="email"
+          placeholder="nombre@institucion.co"
+          value={formData.correo}
+          onChange={handleChange}
+          required
+          size="medium"
+          autoComplete="email"
+          inputProps={{ maxLength: 254 }}
+        />
 
-          {location.state?.registered && !error && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {location.state.message || 'Cuenta creada. Ya puedes iniciar sesión.'}
-            </Alert>
-          )}
+        <FieldLabel htmlFor="login-password">Contraseña</FieldLabel>
+        <PasswordField
+          id="login-password"
+          fullWidth
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          size="medium"
+          autoComplete="current-password"
+        />
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+        <Button
+          fullWidth
+          type="submit"
+          variant="contained"
+          color="primary"
+          size="large"
+          disabled={loading}
+          endIcon={<ArrowForward />}
+          sx={{ mt: 3.5, py: 1.4, fontSize: '0.98rem' }}
+        >
+          {loading ? 'Verificando credenciales...' : 'Entrar al centro de control'}
+        </Button>
+      </Box>
 
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Correo electrónico"
-              name="correo"
-              type="email"
-              value={formData.correo}
-              onChange={handleChange}
-              margin="normal"
-              required
-              size="small"
-              autoComplete="email"
-              inputProps={{ maxLength: 254 }}
-            />
-
-            <PasswordField
-              fullWidth
-              label="Contraseña"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              margin="normal"
-              required
-              size="small"
-              autoComplete="current-password"
-            />
-
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading}
-              sx={{ mt: 3, mb: 2, py: 1.2 }}
-            >
-              {loading
-                ? 'Iniciando sesión...'
-                : 'Iniciar sesión'}
-            </Button>
-          </form>
-
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
-              alignItems: 'center',
-              mt: 2
-            }}
-          >
-            <MuiLink
-              component={Link}
-              to="/forgot-password"
-              variant="body2"
-              color="primary"
-              sx={{
-                fontWeight: 600,
-                textDecoration: 'none'
-              }}
-            >
-              ¿Olvidaste tu contraseña?
-            </MuiLink>
-
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
-              ¿No tienes cuenta?{' '}
-              <MuiLink
-                component={Link}
-                to="/register"
-                color="primary"
-                sx={{
-                  fontWeight: 600,
-                  textDecoration: 'none'
-                }}
-              >
-                Regístrate
-              </MuiLink>
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
-    </Box>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mt: 3 }}>
+        <MuiLink
+          component={Link}
+          to="/forgot-password"
+          variant="body2"
+          underline="hover"
+          sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { color: 'primary.main' } }}
+        >
+          ¿Olvidaste tu contraseña?
+        </MuiLink>
+        <MuiLink
+          component={Link}
+          to="/register"
+          variant="body2"
+          underline="none"
+          sx={{ color: 'primary.main', fontWeight: 600 }}
+        >
+          Registrar usuario
+        </MuiLink>
+      </Stack>
+    </AuthLayout>
   );
 }

@@ -111,7 +111,7 @@ export default function ProfileMenu({ onError }) {
           </Typography>
 
           <Typography variant="caption" color="text.secondary">
-            {roleName[user.role]}
+            {user.customRoleName || roleName[user.role]}
           </Typography>
         </Box>
 

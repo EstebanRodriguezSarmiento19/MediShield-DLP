@@ -96,6 +96,9 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Permisos efectivos calculados por el servidor. Solo ocultan opciones: el servidor valida cada petición.
+  const can = (...keys) => keys.some(key => user?.permissions?.includes(key));
+
   const updateUser = (patch) => {
     setUser((current) =>
       current ? { ...current, ...patch } : current
@@ -111,7 +114,8 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
-        updateUser
+        updateUser,
+        can
       }}
     >
       {children}
@@ -131,8 +135,8 @@ export const useAuth = () => {
   return context;
 };
 
-export function ProtectedRoute({ roles, manageUsers }) {
-  const { user, loading, error } = useAuth();
+export function ProtectedRoute({ roles, manageUsers, permission }) {
+  const { user, loading, error, can } = useAuth();
 
   if (loading) {
     return (
@@ -162,6 +166,14 @@ export function ProtectedRoute({ roles, manageUsers }) {
     return (
       <Alert severity="error">
         No tienes permiso para gestionar cuentas.
+      </Alert>
+    );
+  }
+
+  if (permission && !can(permission)) {
+    return (
+      <Alert severity="error">
+        No tienes permiso para ver esta sección.
       </Alert>
     );
   }

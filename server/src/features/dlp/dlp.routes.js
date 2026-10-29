@@ -1,10 +1,10 @@
 import {Router} from 'express';
 import {analyze,recent,rules,stats} from './dlp.controller.js';
-import {roles} from '../auth/auth.js';
+import {can} from '../permissions/permissions.js';
 import asyncHandler from '../../shared/utils/asyncHandler.js';
 const router=Router();
-router.post('/analyze',roles('usuario','admin'),asyncHandler(analyze));
+router.post('/analyze',can('transferencias.enviar'),asyncHandler(analyze));
 router.get('/stats',asyncHandler(stats));
 router.get('/recent',asyncHandler(recent));
-router.get('/rules',roles('admin','analista'),asyncHandler(rules));
+router.get('/rules',can('reglas.ver'),asyncHandler(rules));
 export default router;

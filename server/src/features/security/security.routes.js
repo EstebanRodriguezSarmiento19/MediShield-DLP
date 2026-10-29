@@ -1,6 +1,6 @@
 import {Router} from 'express';
 import pool,{transaction} from '../../db/pool.js';
-import {roles} from '../auth/auth.js';
+import {can} from '../permissions/permissions.js';
 import {appendAudit,listAudit,verifyAudit,recordAudit} from '../audit/audit.service.js';
 import {loadContext,loadActiveRules,decodeResult} from '../dlp/dlp.store.js';
 import {analyzeTransfer,validateTransfer} from '../dlp/dlp.service.js';
@@ -10,13 +10,13 @@ import {object,email,text,version,pageLimit,fail} from '../../shared/validation.
 import asyncHandler from '../../shared/utils/asyncHandler.js';
 const router=Router();
 const ok=(res,data)=>res.json({success:true,data});
-router.get('/recipients',asyncHandler(async(req,res)=>{
+router.get('/recipients',can('destinatarios.ver'),asyncHandler(async(req,res)=>{
   const [rows]=await pool.execute('SELECT * FROM destinatario ORDER BY correo');
   const result=[];
   for(const row of rows) result.push({...row,...(await loadContext(pool,req.user.id,row.correo)).recipient});
   ok(res,result);
 }));
-router.post('/recipients',roles('admin'),asyncHandler(async(req,res)=>{
+router.post('/recipients',can('destinatarios.gestionar'),asyncHandler(async(req,res)=>{
   object(req.body,['email','name','authorized']);
   const address=email(req.body.email),name=text(req.body.name,'Nombre',120);
   if(typeof req.body.authorized!=='boolean') fail('Autorización inválida.');
@@ -28,7 +28,7 @@ router.post('/recipients',roles('admin'),asyncHandler(async(req,res)=>{
   });
   res.status(201).json({success:true});
 }));
-router.patch('/recipients/:email',roles('admin'),asyncHandler(async(req,res)=>{
+router.patch('/recipients/:email',can('destinatarios.gestionar'),asyncHandler(async(req,res)=>{
   object(req.body,['authorized','version']);
   const address=email(req.params.email),v=version(req.body.version);
   if(typeof req.body.authorized!=='boolean') fail('Autorización inválida.');
@@ -39,11 +39,11 @@ router.patch('/recipients/:email',roles('admin'),asyncHandler(async(req,res)=>{
   });
   ok(res,{});
 }));
-router.get('/rules',roles('admin','analista'),asyncHandler(async(req,res)=>{
+router.get('/rules',can('reglas.ver'),asyncHandler(async(req,res)=>{
   const [rows]=await pool.execute('SELECT * FROM regla_dlp ORDER BY id');
   ok(res,rows.map(row=>({...definitions.find(d=>d.id===row.id),pattern:undefined,...row})));
 }));
-router.patch('/rules/:id',roles('admin'),asyncHandler(async(req,res)=>{
+router.patch('/rules/:id',can('reglas.gestionar'),asyncHandler(async(req,res)=>{
   object(req.body,['weight','version']);
   const v=version(req.body.version),weight=req.body.weight;
   if(!Number.isInteger(weight)||weight<25||weight>60) fail('Peso permitido: entero entre 25 y 60.');
@@ -54,12 +54,12 @@ router.patch('/rules/:id',roles('admin'),asyncHandler(async(req,res)=>{
   });
   ok(res,{});
 }));
-router.get('/alerts',roles('admin','analista'),asyncHandler(async(req,res)=>{
+router.get('/alerts',can('alertas.ver'),asyncHandler(async(req,res)=>{
   const limit=pageLimit(req.query.limit);
   const [rows]=await pool.query('SELECT a.*,t.resultado,t.estado transfer_status,t.id_usuario FROM alerta a JOIN transferencia t ON t.id=a.transferencia_id ORDER BY a.actualizado DESC LIMIT ?',[limit]);
   ok(res,rows.map(row=>({...decodeResult({...row,estado:row.transfer_status}),alertId:row.id,alertStatus:row.estado,note:row.nota,version:row.version,reviewer:row.revisado_por})));
 }));
-router.patch('/alerts/:id',roles('admin','analista'),asyncHandler(async(req,res)=>{
+router.patch('/alerts/:id',can('alertas.gestionar'),asyncHandler(async(req,res)=>{
   object(req.body,['status','note','version']);
   const state=req.body.status,note=text(req.body.note,'Nota de seguimiento',500),v=version(req.body.version);
   if(!['EN_REVISION','CERRADA'].includes(state)) fail('Estado inválido.');
@@ -72,17 +72,17 @@ router.patch('/alerts/:id',roles('admin','analista'),asyncHandler(async(req,res)
   });
   ok(res,{});
 }));
-router.get('/audit',roles('admin','analista'),asyncHandler(async(req,res)=>ok(res,await listAudit(pageLimit(req.query.limit)))));
-router.get('/audit/verify',roles('admin','analista'),asyncHandler(async(req,res)=>ok(res,await verifyAudit())));
-router.get('/security/dlp-tests',roles('admin','analista'),asyncHandler(async(_req,res)=>ok(res,policyTestCases)));
-router.post('/security/dlp-tests/run',roles('admin','analista'),asyncHandler(async(req,res)=>{
+router.get('/audit',can('auditoria.ver'),asyncHandler(async(req,res)=>ok(res,await listAudit(pageLimit(req.query.limit)))));
+router.get('/audit/verify',can('auditoria.ver'),asyncHandler(async(req,res)=>ok(res,await verifyAudit())));
+router.get('/security/dlp-tests',can('seguridad.ver'),asyncHandler(async(_req,res)=>ok(res,policyTestCases)));
+router.post('/security/dlp-tests/run',can('seguridad.ejecutar'),asyncHandler(async(req,res)=>{
   const report=runPolicyTests(await loadActiveRules());
   await recordAudit({actor:req.user.id,action:'DLP_POLICY_TEST',resource:'politica-dlp',outcome:report.summary.failed?'FAILED':'OK',ip:req.ip,
     details:{total:report.summary.total,passed:report.summary.passed,failed:report.summary.failed,rulesVersion:report.rulesVersion}});
   ok(res,report);
 }));
 // Simulador: aplica el motor real con el historial real del usuario. No envía correo ni guarda transferencias.
-router.post('/security/dlp-simulate',roles('admin','analista'),asyncHandler(async(req,res)=>{
+router.post('/security/dlp-simulate',can('seguridad.ejecutar'),asyncHandler(async(req,res)=>{
   const payload=validateTransfer(req.body);
   const context=await loadContext(pool,req.user.id,payload.recipient);
   const analysis=analyzeTransfer(payload,context);

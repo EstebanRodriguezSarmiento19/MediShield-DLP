@@ -2,7 +2,7 @@ import {Router} from 'express';
 import nodemailer from 'nodemailer';
 import env from '../../config/env.js';
 import pool,{transaction} from '../../db/pool.js';
-import {roles} from '../auth/auth.js';
+import {can} from '../permissions/permissions.js';
 import {appendAudit} from '../audit/audit.service.js';
 import {loadContext} from '../dlp/dlp.store.js';
 import {analyzeTransfer,validateTransfer,contentHash} from '../dlp/dlp.service.js';
@@ -11,7 +11,7 @@ import asyncHandler from '../../shared/utils/asyncHandler.js';
 const transport=nodemailer.createTransport({host:env.smtp.host,port:env.smtp.port,secure:false,ignoreTLS:true,
   connectionTimeout:3000,greetingTimeout:3000,socketTimeout:5000});
 const router=Router();
-router.post('/send',roles('usuario','admin'),asyncHandler(async(req,res)=>{
+router.post('/send',can('transferencias.enviar'),asyncHandler(async(req,res)=>{
   object(req.body,['analysisId','recipient','subject','body']);
   const {analysisId,...payload}=req.body;
   if(typeof analysisId!=='string'||!/^[a-f0-9-]{36}$/.test(analysisId)) fail('ID de análisis inválido.');

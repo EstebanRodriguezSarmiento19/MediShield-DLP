@@ -57,7 +57,7 @@ try {
   await cx.query('CREATE USER IF NOT EXISTS ?@? IDENTIFIED BY ?', [appUser, '%', appPassword]);
   const tables = {
     usuario: 'SELECT, INSERT, UPDATE', sesion_web: 'SELECT, INSERT, UPDATE, DELETE',
-    gestor_usuarios: 'SELECT, INSERT, DELETE', recuperacion_clave: 'SELECT, INSERT, UPDATE, DELETE',
+    rol_personalizado: 'SELECT, INSERT, UPDATE, DELETE', rol_permiso: 'SELECT, INSERT, DELETE', gestor_usuarios: 'SELECT, INSERT, DELETE', recuperacion_clave: 'SELECT, INSERT, UPDATE, DELETE',
     auth_attempt: 'SELECT, INSERT, UPDATE', destinatario: 'SELECT, INSERT, UPDATE',
     regla_dlp: 'SELECT, UPDATE', transferencia: 'SELECT, INSERT, UPDATE',
     alerta: 'SELECT, INSERT, UPDATE', historial_comunicacion: 'SELECT, INSERT, UPDATE',

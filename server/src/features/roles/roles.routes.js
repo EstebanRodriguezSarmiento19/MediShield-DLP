@@ -7,6 +7,7 @@ import { invalidateRecovery } from '../auth/recovery.js';
 import { appendAudit } from '../audit/audit.service.js';
 import { object, fail } from '../../shared/validation.js';
 import asyncHandler from '../../shared/utils/asyncHandler.js';
+import customRolesRouter from './customRoles.routes.js';
 
 /**
  * Administración de roles y permisos.
@@ -16,12 +17,14 @@ const ROLES = ['admin', 'analista', 'usuario'];
 const router = Router();
 const emailHash = value => crypto.createHmac('sha256', env.auditKey).update(value).digest('hex');
 const accountQuery = `SELECT u.id_usuario AS id,u.nombre AS name,u.correo AS email,u.rol AS role,
-  u.estado AS status,u.fecha_creacion AS createdAt,
+  u.estado AS status,u.fecha_creacion AS createdAt,u.id_rol AS customRoleId,
+  (SELECT r.nombre FROM rol_personalizado r WHERE r.id_rol=u.id_rol) AS customRoleName,
   (u.rol='admin' OR EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario)) AS canManageUsers
   FROM usuario u`;
 const escapeLike = value => value.replace(/[\\%_]/g, '\\$&');
 
 router.use(roles('admin'));
+router.use('/custom', customRolesRouter);
 
 router.get('/', asyncHandler(async (req, res) => {
   const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';

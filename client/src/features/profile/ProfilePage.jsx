@@ -1,4 +1,5 @@
 import {useEffect,useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {Alert,Avatar,Box,Button,Chip,Divider,Paper,Stack,TextField,Typography} from '@mui/material';
 import api from '../../shared/services/api.js';
 import {useAuth} from '../auth/AuthContext.jsx';
@@ -11,6 +12,7 @@ const blankPassword={currentPassword:'',newPassword:'',confirm:''};
 /** Perfil de cualquier rol: datos, correo y contraseña. */
 export default function ProfilePage(){
  const {user,updateUser}=useAuth();
+ const navigate=useNavigate();
  const [name,setName]=useState(user.name),[email,setEmail]=useState(user.email),[currentPassword,setCurrentPassword]=useState(''),[createdAt,setCreatedAt]=useState(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [pwd,setPwd]=useState(blankPassword),[pwdBusy,setPwdBusy]=useState(false),[pwdError,setPwdError]=useState(''),[pwdNotice,setPwdNotice]=useState('');
@@ -38,18 +40,22 @@ export default function ProfilePage(){
    <Stack direction="row" spacing={2} alignItems="center">
     <Avatar sx={{width:64,height:64,bgcolor:'primary.main',color:'primary.contrastText',fontSize:24}}>{initials(user.name)}</Avatar>
     <Box><Typography variant="h2">{user.name}</Typography><Typography color="text.secondary">{user.email}</Typography>
-     <Chip size="small" label={roleName[user.role]} sx={{mt:0.5}}/></Box>
+     <Chip size="small" label={user.customRoleName||roleName[user.role]} sx={{mt:0.5}}/></Box>
    </Stack>
    <Stack component="form" onSubmit={save} spacing={2}>
     <TextField label="Nombre" value={name} onChange={e=>setName(e.target.value)} inputProps={{maxLength:150}} required/>
     <TextField label="Correo" type="email" value={email} onChange={e=>setEmail(e.target.value)} inputProps={{maxLength:150}} required/>
     {email!==user.email&&<PasswordField label="Contraseña actual" autoComplete="current-password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} required helperText="Necesaria para confirmar el cambio de correo."/>}
-    <TextField label="Rol" value={roleName[user.role]} disabled helperText="Los roles solo los modifica un administrador."/>
+    <TextField label="Rol" value={user.customRoleName||roleName[user.role]} disabled helperText="Los roles solo los modifica un administrador."/>
     {createdAt&&<Typography variant="body2" color="text.secondary">Cuenta creada el {new Date(createdAt).toLocaleDateString('es')}</Typography>}
     <Button type="submit" variant="contained" disabled={busy||(name.trim()===user.name&&email===user.email)||name.trim().length<2} sx={{alignSelf:'flex-start'}}>Guardar cambios</Button>
    </Stack>
   </Stack></Paper>
 
+  {user.role==='admin'&&<Paper variant="outlined" sx={{p:3}}><Stack direction={{xs:'column',sm:'row'}} spacing={2} justifyContent="space-between" alignItems={{sm:'center'}}>
+   <Box><Typography variant="h2">Roles y permisos</Typography><Typography color="text.secondary" variant="body2">Crea roles personalizados, define sus permisos granulares y asigna cuentas desde un único lugar.</Typography></Box>
+   <Button variant="outlined" onClick={()=>navigate('/admin/roles')} sx={{flexShrink:0}}>Gestionar roles</Button>
+  </Stack></Paper>}
   <Paper variant="outlined" sx={{p:3}}><Stack component="form" onSubmit={changePassword} spacing={2}>
    <Typography variant="h2">Cambiar contraseña</Typography>
    {pwdError&&<Alert severity="error">{pwdError}</Alert>}{pwdNotice&&<Alert severity="success">{pwdNotice}</Alert>}

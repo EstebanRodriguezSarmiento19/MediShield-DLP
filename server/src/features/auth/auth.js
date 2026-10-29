@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import pool, { transaction } from '../../db/pool.js';
+import { permissionsFor } from '../permissions/permissions.js';
 import env from '../../config/env.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { appendAudit, recordAudit } from '../audit/audit.service.js';
@@ -11,20 +12,21 @@ import { recoveryConfigured, issueRecoveryToken, invalidateRecovery, sendRecover
 export const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
 export const cookieName = 'medishield_session';
 const cookieOptions = { httpOnly:true, sameSite:'strict', secure:env.production, path:'/api' };
-export const publicUser = u => ({ id:u.id_usuario, name:u.nombre, email:u.correo, role:u.rol,
-  canManageUsers:u.rol==='admin' || Boolean(u.can_manage_users) });
+export const publicUser = (u, permissions = []) => ({ id:u.id_usuario, name:u.nombre, email:u.correo, role:u.rol,
+  canManageUsers:u.rol==='admin' || permissions.includes('usuarios.gestionar'),
+  customRoleId:u.id_rol ?? null, customRoleName:u.custom_role_name ?? null, permissions });
 export const readSessionToken = req => req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(`${cookieName}=`))?.slice(cookieName.length+1);
 // Una sesión se considera abierta mientras no haya expirado y tenga actividad en los últimos 30 minutos.
 const activeSessionSql = 'fecha_expiracion>UTC_TIMESTAMP(3) AND ultima_actividad>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 30 MINUTE)';
 export const requireAuth = asyncHandler(async(req,res,next) => {
   const token = readSessionToken(req);
   if (!token || !/^[0-9a-f]{64}$/.test(token)) fail('Debes iniciar sesión.',401);
-  const [[session]] = await pool.execute(`SELECT s.*,u.nombre,u.correo,u.rol,
+  const [[session]] = await pool.execute(`SELECT s.*,u.nombre,u.correo,u.rol,u.id_rol,r.nombre AS custom_role_name,
     EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario) AS can_manage_users
-    FROM sesion_web s JOIN usuario u ON u.id_usuario=s.id_usuario
+    FROM sesion_web s JOIN usuario u ON u.id_usuario=s.id_usuario LEFT JOIN rol_personalizado r ON r.id_rol=u.id_rol
     WHERE s.sesion_hash=? AND s.fecha_expiracion>UTC_TIMESTAMP(3) AND s.ultima_actividad>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 30 MINUTE) AND u.estado='activo'`,[hashToken(token)]);
   if (!session) fail('La sesión expiró o fue cerrada.',401);
-  req.user = publicUser(session); req.session = session;
+  req.user = publicUser(session, await permissionsFor(session)); req.session = session;
   await pool.execute('UPDATE sesion_web SET ultima_actividad=UTC_TIMESTAMP(3) WHERE sesion_hash=?',[session.sesion_hash]);
   next();
 });
@@ -84,9 +86,9 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
   const address=email(req.body.email), password=req.body.password;
   if (typeof password!=='string' || password.length<1 || password.length>128) fail('Credenciales inválidas.',401);
   if (!await consumeLogin(address,req.ip)) { res.set('Retry-After','900'); fail('Demasiados intentos. Espera 15 minutos.',429); }
-  const [[user]]=await pool.execute(`SELECT u.*,
+  const [[user]]=await pool.execute(`SELECT u.*,r.nombre AS custom_role_name,
     EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario) AS can_manage_users
-    FROM usuario u WHERE u.correo=?`,[address]);
+    FROM usuario u LEFT JOIN rol_personalizado r ON r.id_rol=u.id_rol WHERE u.correo=?`,[address]);
   if (user?.bloqueado_hasta && new Date(user.bloqueado_hasta).getTime() > Date.now()) {
     res.set('Retry-After','900');
     fail('La cuenta está bloqueada temporalmente. Espera 15 minutos.', 429);
@@ -127,7 +129,7 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
     fail('Esta cuenta ya tiene una sesión abierta en otro navegador o ventana. Cierra esa sesión o espera 30 minutos sin actividad.',409);
   }
   res.cookie(cookieName,session.token,{...cookieOptions,maxAge:8*3600*1000});
-  res.json({success:true,data:{user:publicUser(user),csrfToken:session.csrfToken}});
+  res.json({success:true,data:{user:publicUser(user,await permissionsFor(user)),csrfToken:session.csrfToken}});
 }));
 async function registerDirect(req,res) {
   object(req.body,['name','email','password']);
