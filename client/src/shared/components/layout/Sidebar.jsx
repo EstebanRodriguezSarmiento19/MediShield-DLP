@@ -46,28 +46,20 @@ const SECTIONS = [
 ];
 
 const navItemSx = (theme) => ({
-  position: 'relative',
-  mx: 1.25,
+  borderRadius: '12px',
+  mx: 1,
   my: 0.25,
-  px: 1.5,
-  py: 1,
-  borderRadius: '10px',
+  px: 1.25,
+  py: 0.9,
   color: 'text.secondary',
-  '&:hover': { color: 'text.primary', bgcolor: alpha(theme.palette.primary.main, 0.06) },
+  '&:hover': { color: 'text.primary', bgcolor: alpha(theme.palette.text.primary, 0.05) },
   '&.Mui-selected': {
-    color: 'primary.main',
-    bgcolor: alpha(theme.palette.primary.main, 0.12),
-    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) }
+    color: 'text.primary',
+    background: `linear-gradient(90deg, ${alpha(theme.palette.primary.main, 0.2)}, ${alpha(theme.palette.primary.main, 0.02)})`,
+    '& .MuiListItemIcon-root': { color: 'primary.main' }
   },
-  '&.Mui-selected::before': {
-    content: '""',
-    position: 'absolute',
-    left: -6,
-    top: 9,
-    bottom: 9,
-    width: 3,
-    borderRadius: 2,
-    bgcolor: 'primary.main'
+  '&.Mui-selected:hover': {
+    background: `linear-gradient(90deg, ${alpha(theme.palette.primary.main, 0.26)}, ${alpha(theme.palette.primary.main, 0.04)})`
   }
 });
 
@@ -171,7 +163,17 @@ export default function Sidebar({ mobileOpen, onClose, isMobile }) {
       sx={{
         width: DRAWER_WIDTH,
         flexShrink: 0,
-        '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' }
+        '& .MuiDrawer-paper': {
+          width: DRAWER_WIDTH - 24,
+          boxSizing: 'border-box',
+          top: 12,
+          bottom: 12,
+          left: 12,
+          height: 'auto',
+          borderRadius: '20px',
+          border: '1px solid',
+          borderColor: 'divider'
+        }
       }}
     >
       {content}

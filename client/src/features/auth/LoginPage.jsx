@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Link as MuiLink, Stack, TextField } from '@mui/material';
-import { ArrowForward } from '@mui/icons-material';
+import { Alert, Box, Button, Divider, Link as MuiLink, Stack, TextField } from '@mui/material';
+import { LockOutlined } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import { PasswordField } from '../../shared/components/PasswordFields.jsx';
-import { AuthLayout, FieldLabel } from '../../shared/components/auth/AuthLayout.jsx';
+import { AuthLayout } from '../../shared/components/auth/AuthLayout.jsx';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -70,47 +70,46 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      eyebrow="Acceso seguro"
-      title="Bienvenido de nuevo."
-      subtitle="Ingresa para revisar las transferencias y alertas de tu organización."
+      eyebrow="Portal de acceso"
+      title="Iniciar sesión"
+      subtitle="Usa tu correo institucional para acceder al monitoreo de transferencias."
     >
       {location.state?.registered && !error && (
-        <Alert severity="success" sx={{ mb: 2.5 }}>
+        <Alert severity="success" sx={{ mb: 2 }}>
           {location.state.message || 'Cuenta creada. Ya puedes iniciar sesión.'}
         </Alert>
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2.5 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
       <Box component="form" onSubmit={handleSubmit}>
-        <FieldLabel htmlFor="login-correo">Correo de trabajo</FieldLabel>
         <TextField
           id="login-correo"
           fullWidth
+          margin="normal"
+          label="Correo institucional"
           name="correo"
           type="email"
-          placeholder="nombre@institucion.co"
           value={formData.correo}
           onChange={handleChange}
           required
-          size="medium"
           autoComplete="email"
           inputProps={{ maxLength: 254 }}
         />
 
-        <FieldLabel htmlFor="login-password">Contraseña</FieldLabel>
         <PasswordField
           id="login-password"
           fullWidth
+          margin="normal"
+          label="Contraseña"
           name="password"
           value={formData.password}
           onChange={handleChange}
           required
-          size="medium"
           autoComplete="current-password"
         />
 
@@ -118,35 +117,31 @@ export default function LoginPage() {
           fullWidth
           type="submit"
           variant="contained"
-          color="primary"
           size="large"
           disabled={loading}
-          endIcon={<ArrowForward />}
-          sx={{ mt: 3.5, py: 1.4, fontSize: '0.98rem' }}
+          startIcon={<LockOutlined />}
+          sx={{ mt: 3, py: 1.3 }}
         >
-          {loading ? 'Verificando credenciales...' : 'Entrar al centro de control'}
+          {loading ? 'Verificando...' : 'Iniciar sesión'}
         </Button>
       </Box>
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mt: 3 }}>
+      <Stack spacing={2.5} alignItems="center" sx={{ mt: 3.5 }}>
         <MuiLink
           component={Link}
           to="/forgot-password"
           variant="body2"
           underline="hover"
-          sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { color: 'primary.main' } }}
+          color="text.secondary"
         >
           ¿Olvidaste tu contraseña?
         </MuiLink>
-        <MuiLink
-          component={Link}
-          to="/register"
-          variant="body2"
-          underline="none"
-          sx={{ color: 'primary.main', fontWeight: 600 }}
-        >
-          Registrar usuario
-        </MuiLink>
+
+        <Divider flexItem />
+
+        <Button fullWidth variant="outlined" component={Link} to="/register">
+          Crear una cuenta
+        </Button>
       </Stack>
     </AuthLayout>
   );

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Alert, Box, Button, Link as MuiLink, Stack, TextField, Typography } from '@mui/material';
-import { ArrowForward } from '@mui/icons-material';
+import { Alert, Box, Button, Divider, Stack, TextField, Typography } from '@mui/material';
+import { PersonAddAlt } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { PasswordField, PasswordRequirements } from '../../shared/components/PasswordFields.jsx';
-import { AuthLayout, FieldLabel } from '../../shared/components/auth/AuthLayout.jsx';
+import { AuthLayout } from '../../shared/components/auth/AuthLayout.jsx';
 import { isPasswordValid } from '../../shared/utils/passwordPolicy.js';
 import api from '../../shared/services/api.js';
 import { useAuth } from './AuthContext.jsx';
@@ -67,23 +67,23 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout
-      eyebrow="Registro seguro"
-      title="Crea tu cuenta."
-      subtitle="Registro en el laboratorio de protección de datos médicos."
+      eyebrow="Registro"
+      title="Crear cuenta"
+      subtitle="Alta de usuario para el laboratorio de protección de datos médicos."
     >
       {config && !available && (
-        <Alert severity="warning" sx={{ mb: 2.5 }}>
+        <Alert severity="warning" sx={{ mb: 2 }}>
           El registro público no está habilitado. Solicita una invitación a un administrador.
         </Alert>
       )}
-      {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
-      {info && <Alert severity="success" sx={{ mb: 2.5 }}>{info}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {info && <Alert severity="success" sx={{ mb: 2 }}>{info}</Alert>}
 
       <Box component="form" onSubmit={handleSubmit}>
-        <FieldLabel htmlFor="register-nombre">Nombre completo</FieldLabel>
         <TextField
-          id="register-nombre"
           fullWidth
+          margin="normal"
+          label="Nombre completo"
           name="nombre"
           value={formData.nombre}
           onChange={handleChange}
@@ -92,13 +92,12 @@ export default function RegisterPage() {
           inputProps={{ maxLength: 150 }}
         />
 
-        <FieldLabel htmlFor="register-correo">Correo de trabajo</FieldLabel>
         <TextField
-          id="register-correo"
           fullWidth
+          margin="normal"
+          label="Correo institucional"
           name="correo"
           type="email"
-          placeholder="nombre@institucion.co"
           value={formData.correo}
           onChange={handleChange}
           required
@@ -108,24 +107,24 @@ export default function RegisterPage() {
 
         {direct && (
           <>
-            <FieldLabel htmlFor="register-password">Contraseña</FieldLabel>
             <PasswordField
-              id="register-password"
               fullWidth
+              margin="normal"
+              label="Contraseña"
               name="password"
               value={formData.password}
               onChange={handleChange}
               required
               autoComplete="new-password"
             />
-            <Box sx={{ mt: 1.5, p: 2, borderRadius: 3, border: (t) => `1px solid ${t.palette.divider}`, bgcolor: 'action.hover' }}>
+            <Box sx={{ mt: 1, p: 2, borderRadius: 2.5, border: (t) => `1px solid ${t.palette.divider}` }}>
               <PasswordRequirements password={formData.password} />
             </Box>
 
-            <FieldLabel htmlFor="register-confirm">Confirmar contraseña</FieldLabel>
             <PasswordField
-              id="register-confirm"
               fullWidth
+              margin="normal"
+              label="Confirmar contraseña"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
@@ -138,7 +137,7 @@ export default function RegisterPage() {
         )}
 
         {config && !direct && available && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             Te enviaremos un enlace para confirmar tu correo y elegir tu contraseña.
           </Typography>
         )}
@@ -147,24 +146,21 @@ export default function RegisterPage() {
           fullWidth
           type="submit"
           variant="contained"
-          color="primary"
           size="large"
           disabled={loading || !available}
-          endIcon={<ArrowForward />}
-          sx={{ mt: 3.5, py: 1.4, fontSize: '0.98rem' }}
+          startIcon={<PersonAddAlt />}
+          sx={{ mt: 3, py: 1.3 }}
         >
           {loading ? 'Registrando...' : (direct ? 'Crear cuenta' : 'Solicitar registro')}
         </Button>
       </Box>
 
-      <Box sx={{ textAlign: 'center', mt: 3 }}>
-        <Typography variant="body2" color="text.secondary">
-          ¿Ya tienes cuenta?{' '}
-          <MuiLink component={Link} to="/login" underline="none" sx={{ color: 'primary.main', fontWeight: 600 }}>
-            Inicia sesión aquí
-          </MuiLink>
-        </Typography>
-      </Box>
+      <Stack spacing={2.5} alignItems="center" sx={{ mt: 3.5 }}>
+        <Divider flexItem />
+        <Button fullWidth variant="outlined" component={Link} to="/login">
+          Ya tengo una cuenta
+        </Button>
+      </Stack>
     </AuthLayout>
   );
 }
