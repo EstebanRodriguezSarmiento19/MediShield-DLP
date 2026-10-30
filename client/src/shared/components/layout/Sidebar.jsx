@@ -128,7 +128,15 @@ export default function Sidebar({ mobileOpen, onClose, isMobile }) {
                   const active = location.pathname === item.path;
                   const Icon = item.icon;
                   return (
-                    <Tooltip key={item.path} title={item.label} placement="right" arrow disableHoverListener={expanded}>
+                    <Tooltip
+                      key={item.path}
+                      title={item.label}
+                      placement="right"
+                      arrow
+                      disableHoverListener={expanded}
+                      disableFocusListener
+                      disableTouchListener
+                    >
                       <ListItemButton
                         component={NavLink}
                         to={item.path}
@@ -199,7 +207,9 @@ export default function Sidebar({ mobileOpen, onClose, isMobile }) {
           boxSizing: 'border-box',
           overflowX: 'hidden',
           transition: 'width 0.22s ease, box-shadow 0.22s ease',
-          boxShadow: hovered && !isMobile ? '16px 0 40px -18px rgba(0, 0, 0, 0.55)' : 'none'
+          boxShadow: hovered && !isMobile ? '16px 0 40px -18px rgba(0, 0, 0, 0.55)' : 'none',
+          // Al expandirse, el carril queda por encima del header para no chocar con su título.
+          zIndex: (theme) => (hovered && !isMobile ? theme.zIndex.drawer + 2 : theme.zIndex.drawer)
         }
       }}
     >
