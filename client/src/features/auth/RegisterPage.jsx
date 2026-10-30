@@ -95,7 +95,7 @@ export default function RegisterPage() {
         <TextField
           fullWidth
           margin="normal"
-          label="Correo institucional"
+          label="Correo"
           name="correo"
           type="email"
           value={formData.correo}

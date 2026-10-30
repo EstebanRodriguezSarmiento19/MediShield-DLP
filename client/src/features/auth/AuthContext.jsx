@@ -17,10 +17,18 @@ import api from '../../shared/services/api.js';
 
 const Context = createContext(null);
 
+// Debe coincidir con IDLE_MINUTES del servidor (server/src/features/auth/auth.js).
+const IDLE_MS = 3 * 60 * 1000;
+// Renueva la actividad en el servidor como máximo una vez por minuto mientras el usuario navega.
+const PING_MS = 60 * 1000;
+const IDLE_MESSAGE = 'Tu sesión se cerró por inactividad (3 minutos). Inicia sesión de nuevo.';
+const EXPIRED_MESSAGE = 'Tu sesión ha expirado. Inicia sesión de nuevo.';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sessionNotice, setSessionNotice] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -55,6 +63,7 @@ export function AuthProvider({ children }) {
     const clearSession = () => {
       setUser(null);
       api.setCsrf('');
+      setSessionNotice(EXPIRED_MESSAGE);
     };
 
     window.addEventListener('session-expired', clearSession);
@@ -105,6 +114,65 @@ export function AuthProvider({ children }) {
     );
   };
 
+  const clearSessionNotice = () => setSessionNotice('');
+
+  // Cierre por inactividad: solo mientras hay una sesión iniciada.
+  // La última actividad se comparte entre pestañas (localStorage), porque la sesión del servidor es única:
+  // si usas otra pestaña, esta no debe cerrar la sesión. Como mucho cada minuto se avisa al servidor
+  // para que su marca de actividad siga al día mientras la interfaz está en uso.
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const KEY = 'medishield_last_activity';
+    let timer;
+    let lastActivity = Date.now();
+    let lastWrite = 0;
+    let lastPing = Date.now();
+
+    const writeShared = (now) => {
+      try { localStorage.setItem(KEY, String(now)); } catch { /* almacenamiento no disponible */ }
+    };
+
+    const readShared = () => {
+      try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; }
+    };
+
+    const expire = () => {
+      setSessionNotice(IDLE_MESSAGE);
+      logout();
+    };
+
+    const check = () => {
+      const last = Math.max(readShared(), lastActivity);
+      const remaining = IDLE_MS - (Date.now() - last);
+      if (remaining <= 0) expire();
+      else timer = setTimeout(check, remaining);
+    };
+
+    const reset = () => {
+      const now = Date.now();
+      lastActivity = now;
+      if (now - lastWrite > 1000) {
+        lastWrite = now;
+        writeShared(now);
+      }
+      if (now - lastPing > PING_MS) {
+        lastPing = now;
+        api.get('/auth/me').catch(() => {});
+      }
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'pointerdown'];
+    events.forEach((name) => window.addEventListener(name, reset, { passive: true }));
+    writeShared(lastActivity);
+    timer = setTimeout(check, IDLE_MS);
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((name) => window.removeEventListener(name, reset));
+    };
+  }, [user]);
+
   return (
     <Context.Provider
       value={{
@@ -115,7 +183,9 @@ export function AuthProvider({ children }) {
         register,
         logout,
         updateUser,
-        can
+        can,
+        sessionNotice,
+        clearSessionNotice
       }}
     >
       {children}

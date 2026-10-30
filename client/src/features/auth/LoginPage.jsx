@@ -9,7 +9,7 @@ import { AuthLayout } from '../../shared/components/auth/AuthLayout.jsx';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, sessionNotice, clearSessionNotice } = useAuth();
 
   const [formData, setFormData] = useState({
     correo: '',
@@ -74,6 +74,12 @@ export default function LoginPage() {
       title="Iniciar sesión"
       subtitle="Usa tu correo institucional para acceder al monitoreo de transferencias."
     >
+      {sessionNotice && (
+        <Alert severity="info" onClose={clearSessionNotice} sx={{ mb: 2 }}>
+          {sessionNotice}
+        </Alert>
+      )}
+
       {location.state?.registered && !error && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {location.state.message || 'Cuenta creada. Ya puedes iniciar sesión.'}
