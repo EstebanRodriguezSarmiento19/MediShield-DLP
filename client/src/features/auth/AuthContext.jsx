@@ -18,10 +18,10 @@ import api from '../../shared/services/api.js';
 const Context = createContext(null);
 
 // Debe coincidir con IDLE_MINUTES del servidor (server/src/features/auth/auth.js).
-const IDLE_MS = 3 * 60 * 1000;
-// Renueva la actividad en el servidor como máximo una vez por minuto mientras el usuario navega.
+const IDLE_MS = 15 * 60 * 1000;
+// El token de acceso dura dos minutos sin actividad; la interacción renueva ambos tiempos.
 const PING_MS = 60 * 1000;
-const IDLE_MESSAGE = 'Tu sesión se cerró por inactividad (3 minutos). Inicia sesión de nuevo.';
+const IDLE_MESSAGE = 'Tu sesión se cerró por inactividad (15 minutos). Inicia sesión de nuevo.';
 const EXPIRED_MESSAGE = 'Tu sesión ha expirado. Inicia sesión de nuevo.';
 
 export function AuthProvider({ children }) {
@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
 
-    api.get('/auth/me')
+    api.refresh()
       .then((r) => {
         if (!active) return;
 
@@ -80,6 +80,7 @@ export function AuthProvider({ children }) {
     });
 
     api.setCsrf(r.data.csrfToken || '');
+    try { localStorage.setItem('medishield_last_activity', String(Date.now())); } catch { /* almacenamiento no disponible */ }
     setUser(r.data.user);
     setError('');
 
@@ -100,6 +101,7 @@ export function AuthProvider({ children }) {
       await api.post('/auth/logout', {});
     } finally {
       api.setCsrf('');
+      try { localStorage.removeItem('medishield_last_activity'); } catch { /* almacenamiento no disponible */ }
       setUser(null);
       setError('');
     }
@@ -118,8 +120,8 @@ export function AuthProvider({ children }) {
 
   // Cierre por inactividad: solo mientras hay una sesión iniciada.
   // La última actividad se comparte entre pestañas (localStorage), porque la sesión del servidor es única:
-  // si usas otra pestaña, esta no debe cerrar la sesión. Como mucho cada minuto se avisa al servidor
-  // para que su marca de actividad siga al día mientras la interfaz está en uso.
+  // si usas otra pestaña, esta no debe cerrar la sesión. Solo eventos reales del usuario
+  // renuevan el acceso; consultas automáticas no prolongan el tiempo de inactividad.
   useEffect(() => {
     if (!user) return undefined;
 
@@ -139,7 +141,7 @@ export function AuthProvider({ children }) {
 
     const expire = () => {
       setSessionNotice(IDLE_MESSAGE);
-      logout();
+      void logout().catch(() => {});
     };
 
     const check = () => {
@@ -151,6 +153,7 @@ export function AuthProvider({ children }) {
 
     const reset = () => {
       const now = Date.now();
+      if (now - Math.max(readShared(),lastActivity) >= IDLE_MS) { expire(); return; }
       lastActivity = now;
       if (now - lastWrite > 1000) {
         lastWrite = now;
@@ -158,7 +161,9 @@ export function AuthProvider({ children }) {
       }
       if (now - lastPing > PING_MS) {
         lastPing = now;
-        api.get('/auth/me').catch(() => {});
+        api.refresh().catch((error) => {
+          if (error.status === 401) window.dispatchEvent(new Event('session-expired'));
+        });
       }
     };
 

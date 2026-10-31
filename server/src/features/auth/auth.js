@@ -11,25 +11,29 @@ import asyncHandler from '../../shared/utils/asyncHandler.js';
 import { recoveryConfigured, issueRecoveryToken, invalidateRecovery, sendRecoveryEmail, sendRegistrationEmail } from './recovery.js';
 export const hashToken = token => crypto.createHash('sha256').update(token).digest('hex');
 export const cookieName = 'medishield_session';
-// Inactividad máxima antes de cerrar sesión. Cada petición renueva la actividad.
-export const IDLE_MINUTES = 3;
+export const accessCookieName = 'medishield_access';
+export const ACCESS_IDLE_MINUTES = 2;
+export const IDLE_MINUTES = 15;
 const cookieOptions = { httpOnly:true, sameSite:'strict', secure:env.production, path:'/api' };
+const accessMaxAge = ACCESS_IDLE_MINUTES * 60 * 1000;
+const sessionMaxAge = 8 * 3600 * 1000;
+const accessTokenFor = sessionToken => crypto.createHmac('sha256',sessionToken).update('medishield-access-v1').digest('hex');
+const readCookie = (req,name) => req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(`${name}=`))?.slice(name.length+1);
+const validToken = token => typeof token==='string' && /^[0-9a-f]{64}$/.test(token);
 export const publicUser = (u, permissions = []) => ({ id:u.id_usuario, name:u.nombre, email:u.correo, role:u.rol,
   canManageUsers:u.rol==='admin' || permissions.includes('usuarios.gestionar'),
   customRoleId:u.id_rol ?? null, customRoleName:u.custom_role_name ?? null, permissions });
-export const readSessionToken = req => req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(`${cookieName}=`))?.slice(cookieName.length+1);
-// Una sesión se considera abierta mientras no haya expirado y tenga actividad en los últimos IDLE_MINUTES minutos.
-const activeSessionSql = `fecha_expiracion>UTC_TIMESTAMP(3) AND ultima_actividad>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL ${IDLE_MINUTES} MINUTE)`;
+export const readSessionToken = req => readCookie(req,cookieName);
+const activeSessionSql = `s.fecha_expiracion>UTC_TIMESTAMP(3) AND s.ultima_actividad>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL ${IDLE_MINUTES} MINUTE)`;
 export const requireAuth = asyncHandler(async(req,res,next) => {
-  const token = readSessionToken(req);
-  if (!token || !/^[0-9a-f]{64}$/.test(token)) fail('Debes iniciar sesión.',401);
+  const token = readCookie(req,accessCookieName);
+  if (!validToken(token)) fail('El token de acceso expiró. Renueva la sesión.',401);
   const [[session]] = await pool.execute(`SELECT s.*,u.nombre,u.correo,u.rol,u.id_rol,r.nombre AS custom_role_name,
     EXISTS(SELECT 1 FROM gestor_usuarios g WHERE g.id_usuario=u.id_usuario) AS can_manage_users
     FROM sesion_web s JOIN usuario u ON u.id_usuario=s.id_usuario LEFT JOIN rol_personalizado r ON r.id_rol=u.id_rol
-    WHERE s.sesion_hash=? AND s.fecha_expiracion>UTC_TIMESTAMP(3) AND s.ultima_actividad>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL ${IDLE_MINUTES} MINUTE) AND u.estado='activo'`,[hashToken(token)]);
-  if (!session) fail('La sesión expiró o fue cerrada.',401);
+    WHERE s.access_hash=? AND ${activeSessionSql} AND s.ultima_actividad_access>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL ${ACCESS_IDLE_MINUTES} MINUTE) AND u.estado='activo'`,[hashToken(token)]);
+  if (!session) fail('El token de acceso o la sesión expiró.',401);
   req.user = publicUser(session, await permissionsFor(session)); req.session = session;
-  await pool.execute('UPDATE sesion_web SET ultima_actividad=UTC_TIMESTAMP(3) WHERE sesion_hash=?',[session.sesion_hash]);
   next();
 });
 export const roles = (...allowed) => asyncHandler(async(req,res,next) => {
@@ -77,9 +81,12 @@ async function consumeRegister(ip, address) {
 }
 async function openSession(cx, userId) {
   const token = crypto.randomBytes(32).toString('hex'), csrfToken = crypto.randomBytes(32).toString('hex');
+  const accessToken = accessTokenFor(token);
   await cx.execute('DELETE FROM sesion_web WHERE fecha_expiracion<UTC_TIMESTAMP(3)');
-  await cx.execute(`INSERT INTO sesion_web VALUES (?,?,?,UTC_TIMESTAMP(3),DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 8 HOUR),UTC_TIMESTAMP(3))`,[hashToken(token),userId,csrfToken]);
-  return { token, csrfToken };
+  await cx.execute(`INSERT INTO sesion_web (sesion_hash,id_usuario,csrf_token,fecha_inicio,fecha_expiracion,ultima_actividad,access_hash,ultima_actividad_access)
+    VALUES (?,?,?,UTC_TIMESTAMP(3),DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 8 HOUR),UTC_TIMESTAMP(3),?,UTC_TIMESTAMP(3))`,
+  [hashToken(token),userId,csrfToken,hashToken(accessToken)]);
+  return { token, accessToken, csrfToken };
 }
 const router=Router();
 router.get('/config',(_req,res)=>res.json({success:true,data:{allowPublicRegistration:env.allowPublicRegistration,directRegistration:env.directRegistration,recoveryAvailable:recoveryConfigured()}}));
@@ -110,27 +117,23 @@ router.post('/login',sameOrigin,asyncHandler(async(req,res) => {
     await recordAudit({action:'LOGIN_FAILED',outcome:'DENIED',ip:req.ip,details:{accountHash:hashToken(address)}});
     fail('Credenciales inválidas.',401);
   }
-  let session, blockedByOpenSession=false;
+  let session;
   await transaction(async cx=>{
     // Bloquea la fila de la cuenta para que dos inicios simultáneos no abran dos sesiones.
     await cx.execute('SELECT id_usuario FROM usuario WHERE id_usuario=? FOR UPDATE',[user.id_usuario]);
     const current = readSessionToken(req);
     const currentHash = current && /^[0-9a-f]{64}$/.test(current) ? hashToken(current) : '';
-    // Una sesión abierta en otro navegador bloquea el acceso; la del mismo navegador no cuenta.
-    const [[active]]=await cx.execute(`SELECT COUNT(*) AS total FROM sesion_web WHERE id_usuario=? AND sesion_hash<>? AND ${activeSessionSql}`,[user.id_usuario,currentHash]);
-    if (Number(active.total)>0) { blockedByOpenSession=true; return; }
-    // Mismo navegador: se reemplaza la sesión que tuviera esta cookie, aunque fuera de otra cuenta.
+    // Un inicio válido reemplaza las sesiones anteriores de esta cuenta, incluso en otro navegador.
+    await cx.execute('DELETE FROM sesion_web WHERE id_usuario=?',[user.id_usuario]);
+    // También reemplaza la sesión de otra cuenta que aún tuviera este navegador.
     if (currentHash) await cx.execute('DELETE FROM sesion_web WHERE sesion_hash=?',[currentHash]);
     await cx.execute('UPDATE auth_attempt SET attempts=0 WHERE bucket=?',[hashToken('email:'+address)]);
     await cx.execute('UPDATE usuario SET bloqueado_hasta=NULL WHERE id_usuario=?',[user.id_usuario]);
     session=await openSession(cx,user.id_usuario);
     await appendAudit(cx,{actor:user.id_usuario,action:'LOGIN_SUCCESS',ip:req.ip});
   });
-  if (blockedByOpenSession) {
-    await recordAudit({actor:user.id_usuario,action:'LOGIN_BLOCKED_OPEN_SESSION',outcome:'DENIED',ip:req.ip});
-    fail(`Esta cuenta ya tiene una sesión abierta en otro navegador o ventana. Cierra esa sesión o espera ${IDLE_MINUTES} minutos sin actividad.`,409);
-  }
-  res.cookie(cookieName,session.token,{...cookieOptions,maxAge:8*3600*1000});
+  res.cookie(cookieName,session.token,{...cookieOptions,maxAge:sessionMaxAge});
+  res.cookie(accessCookieName,session.accessToken,{...cookieOptions,maxAge:accessMaxAge});
   res.json({success:true,data:{user:publicUser(user,await permissionsFor(user)),csrfToken:session.csrfToken}});
 }));
 async function registerDirect(req,res) {
@@ -267,11 +270,39 @@ router.post('/password/reset',sameOrigin,asyncHandler(async(req,res) => {
     await cx.execute('DELETE FROM sesion_web WHERE id_usuario=?',[row.id_usuario]);
     await appendAudit(cx,{actor:row.id_usuario,action:'PASSWORD_RESET_COMPLETED',resource:'usuario',ip:req.ip});
   });
-  res.clearCookie(cookieName,cookieOptions).json({success:true,data:{message:'Contraseña actualizada. Inicia sesión de nuevo.'}});
+  res.clearCookie(cookieName,cookieOptions).clearCookie(accessCookieName,cookieOptions).json({success:true,data:{message:'Contraseña actualizada. Inicia sesión de nuevo.'}});
+}));
+// La cookie de sesión solo sirve para renovar el acceso al volver a interactuar con la aplicación.
+router.post('/refresh',sameOrigin,asyncHandler(async(req,res)=>{
+  if (req.get('Origin') !== env.clientOrigin) fail('Origen no permitido.',403);
+  const token=readSessionToken(req);
+  if (!validToken(token)) fail('La sesión expiró.',401);
+  const accessToken=accessTokenFor(token);
+  await pool.execute(`UPDATE sesion_web s JOIN usuario u ON u.id_usuario=s.id_usuario
+    SET s.access_hash=?,s.ultima_actividad_access=UTC_TIMESTAMP(3),s.ultima_actividad=UTC_TIMESTAMP(3)
+    WHERE s.sesion_hash=? AND ${activeSessionSql} AND u.estado='activo'`,[hashToken(accessToken),hashToken(token)]);
+  const [[session]]=await pool.execute(`SELECT s.csrf_token,u.*,r.nombre AS custom_role_name
+    FROM sesion_web s JOIN usuario u ON u.id_usuario=s.id_usuario LEFT JOIN rol_personalizado r ON r.id_rol=u.id_rol
+    WHERE s.sesion_hash=? AND ${activeSessionSql} AND u.estado='activo'`,[hashToken(token)]);
+  if (!session) fail('La sesión expiró o fue cerrada.',401);
+  res.cookie(accessCookieName,accessToken,{...cookieOptions,maxAge:accessMaxAge});
+  res.json({success:true,data:{user:publicUser(session,await permissionsFor(session)),csrfToken:session.csrf_token}});
 }));
 router.get('/me',requireAuth,(req,res)=>res.json({success:true,data:{user:req.user,csrfToken:req.session.csrf_token}}));
-router.post('/logout',sameOrigin,requireAuth,csrf,asyncHandler(async(req,res)=>{
-  await transaction(async cx=>{await cx.execute('DELETE FROM sesion_web WHERE sesion_hash=?',[req.session.sesion_hash]); await appendAudit(cx,{actor:req.user.id,action:'LOGOUT',ip:req.ip});});
-  res.clearCookie(cookieName,cookieOptions).json({success:true});
+router.post('/logout',sameOrigin,asyncHandler(async(req,res)=>{
+  const token=readSessionToken(req);
+  if (validToken(token)) {
+    const [[session]]=await pool.execute(`SELECT s.id_usuario,s.csrf_token FROM sesion_web s WHERE s.sesion_hash=? AND ${activeSessionSql}`,[hashToken(token)]);
+    if (session) {
+      req.session=session;
+      const csrfToken=req.get('X-CSRF-Token') || '';
+      if (!validToken(csrfToken) || !crypto.timingSafeEqual(Buffer.from(csrfToken),Buffer.from(session.csrf_token))) fail('Token CSRF inválido.',403);
+      await transaction(async cx=>{await cx.execute('DELETE FROM sesion_web WHERE sesion_hash=?',[hashToken(token)]);
+        await appendAudit(cx,{actor:session.id_usuario,action:'LOGOUT',ip:req.ip});});
+      res.clearCookie(cookieName,cookieOptions).clearCookie(accessCookieName,cookieOptions).json({success:true});
+      return;
+    }
+  }
+  res.clearCookie(cookieName,cookieOptions).clearCookie(accessCookieName,cookieOptions).json({success:true});
 }));
 export default router;

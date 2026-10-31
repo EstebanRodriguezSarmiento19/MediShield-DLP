@@ -104,17 +104,18 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [updatedAt, setUpdatedAt] = useState(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (background = false) => {
     try {
       const [statsResponse, recentResponse] = await Promise.all([
-        api.get('/dlp/stats'),
-        api.get('/dlp/recent?limit=60')
+        api.get('/dlp/stats', { background }),
+        api.get('/dlp/recent?limit=60', { background })
       ]);
       setStats(statsResponse.data);
       setRecent(recentResponse.data);
       setError('');
       setUpdatedAt(new Date());
     } catch (err) {
+      if (background && err.status === 401) return;
       setError(err.message || 'No se pudo cargar la actividad.');
     } finally {
       setLoading(false);
@@ -123,7 +124,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     load();
-    const timer = setInterval(load, REFRESH_MS);
+    const timer = setInterval(() => load(true), REFRESH_MS);
     return () => clearInterval(timer);
   }, [load]);
 
@@ -166,7 +167,7 @@ export default function DashboardPage() {
           <Typography variant="caption" color={error ? 'error.main' : 'text.secondary'}>
             {error ? 'Sin conexión' : `Actualizado ${updatedAt ? updatedAt.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'} · cada 30 s`}
           </Typography>
-          <Button size="small" variant="text" startIcon={<Refresh fontSize="small" />} onClick={load}>
+          <Button size="small" variant="text" startIcon={<Refresh fontSize="small" />} onClick={() => load()}>
             Actualizar
           </Button>
         </Stack>

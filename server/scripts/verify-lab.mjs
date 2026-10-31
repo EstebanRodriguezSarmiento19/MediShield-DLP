@@ -64,7 +64,7 @@ try{
  async function login(key){
   const {email,password}=accounts[key],r=await request('POST','/auth/login',{email,password});
   assert.equal(r.status,200);
-  return {cookie:r.headers.get('set-cookie').split(';')[0],csrf:r.data.csrfToken,user:r.data.user,headers:r.headers};
+  return {cookie:r.headers.getSetCookie().map(value=>value.split(';')[0]).join('; '),csrf:r.data.csrfToken,user:r.data.user,headers:r.headers};
  }
  await check('AUT-03','Autenticación por roles y cookie HttpOnly SameSite',async()=>{
   user=await login('user');other=await login('other');security=await login('security');analyst=await login('analyst');
@@ -191,6 +191,27 @@ try{
   assert.equal(r.headers.get('x-content-type-options'),'nosniff');
   assert.equal(r.headers.get('cache-control'),'no-store');
   assert.equal(r.headers.get('x-powered-by'),null);
+ });
+ await check('AUT-09','Token vence a los 2 minutos y solo una renovación de origen válido lo recupera',async()=>{
+  await admin.execute('UPDATE sesion_web SET ultima_actividad_access=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 3 MINUTE) WHERE id_usuario=?',[accounts.user.id]);
+  const [[before]]=await admin.execute('SELECT ultima_actividad FROM sesion_web WHERE id_usuario=?',[accounts.user.id]);
+  assert.equal((await request('GET','/dlp/stats',undefined,user)).status,401);
+  const [[after]]=await admin.execute('SELECT ultima_actividad FROM sesion_web WHERE id_usuario=?',[accounts.user.id]);
+  assert.equal(new Date(after.ultima_actividad).getTime(),new Date(before.ultima_actividad).getTime());
+  assert.equal((await request('POST','/auth/refresh',{},user,{Origin:'https://externo.invalid'})).status,403);
+  const renewed=await request('POST','/auth/refresh',{},user,{Origin:labConfig.CLIENT_ORIGIN||'http://localhost:5173'});
+  assert.equal(renewed.status,200,renewed.error?.message);
+  assert.equal((await request('GET','/dlp/stats',undefined,user)).status,200);
+ });
+ await check('AUT-10','Sesión vence a los 15 minutos aunque se conserve la cookie',async()=>{
+  await admin.execute('UPDATE sesion_web SET ultima_actividad=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 16 MINUTE) WHERE id_usuario=?',[accounts.user.id]);
+  assert.equal((await request('POST','/auth/refresh',{},user,{Origin:labConfig.CLIENT_ORIGIN||'http://localhost:5173'})).status,401);
+  assert.equal((await request('GET','/dlp/stats',undefined,user)).status,401);
+ });
+ await check('AUT-11','Un nuevo inicio válido invalida la sesión anterior de la misma cuenta',async()=>{
+  const replacement=await login('security');
+  assert.equal((await request('GET','/auth/me',undefined,security)).status,401);
+  assert.equal((await request('GET','/auth/me',undefined,replacement)).status,200);
  });
 } finally {
  await stop(); if(smtp)await new Promise(r=>smtp.close(r));

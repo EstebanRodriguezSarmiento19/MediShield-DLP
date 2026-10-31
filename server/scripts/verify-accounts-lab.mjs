@@ -44,7 +44,7 @@ const base=`http://127.0.0.1:${server.address().port}/api`;
 async function call(path,{method='GET',body,session}={}){
   const response=await nativeFetch(base+path,{method,headers:{'Content-Type':'application/json',
     ...(session?{Cookie:session.cookie,'X-CSRF-Token':session.csrf}: {})},body:body===undefined?undefined:JSON.stringify(body)});
-  return {status:response.status,data:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};
+  return {status:response.status,data:await response.json(),cookie:response.headers.getSetCookie().map(value=>value.split(';')[0]).join('; ')};
 }
 async function login(email,password){
   const response=await call('/auth/login',{method:'POST',body:{email,password}});
@@ -66,14 +66,14 @@ function lastRegistrationToken(){
 const suffix=crypto.randomBytes(6).toString('hex');
 const address=`qa-${suffix}@medishield.local`;
 const newAddress=`qa-new-${suffix}@medishield.local`;
-const password1=`Prueba-segura-${crypto.randomBytes(18).toString('hex')}`;
-const password2=`Renovada-segura-${crypto.randomBytes(18).toString('hex')}`;
+const password1=`Prueba-segura-${crypto.randomBytes(8).toString('hex')}`;
+const password2=`Renovada-segura-${crypto.randomBytes(8).toString('hex')}`;
 let checks=0;
 try{
   const adminSession=await login(admin.email,admin.password);
   const beforeExistingRegistration=sent.length;
   let registration=await call('/auth/register',{method:'POST',body:{name:'Nombre nuevo',email:admin.email}});
-  assert.equal(registration.status,202,registration.data?.error?.message);
+  assert.equal(registration.status,409,registration.data?.error?.message);
   assert.equal(sent.length,beforeExistingRegistration);checks++;
   const registrationAddress=`qa-register-${suffix}@medishield.local`;
   registration=await call('/auth/register',{method:'POST',body:{name:'Registro verificado',email:registrationAddress}});

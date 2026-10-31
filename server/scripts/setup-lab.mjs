@@ -20,6 +20,11 @@ try {
   const source=await fs.readFile(url,'utf8');
   for(const statement of source.replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean)) {
    if(/^(CREATE DATABASE|USE )/i.test(statement)) continue;
+   const alter=statement.match(/^ALTER TABLE (usuario|sesion_web)\s+ADD COLUMN (bloqueado_hasta|id_rol|access_hash)\b/i);
+   if(alter){
+    const [[existing]]=await cx.execute(`SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=? LIMIT 1`,[dbName,alter[1],alter[2]]);
+    if(existing) continue;
+   }
    await cx.query(statement);
   }
  }
