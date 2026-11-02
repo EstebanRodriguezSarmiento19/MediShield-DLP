@@ -26,7 +26,7 @@ router.post('/send',can('transferencias.enviar'),asyncHandler(async(req,res)=>{
       await appendAudit(cx,{actor:req.user.id,action:'SEND_DENIED',resource:analysisId,outcome:'DENIED',ip:req.ip,details:{decision:current.decision}});
       return {denied:true};
     }
-    if(!env.smtp.enabled) fail('El envío de laboratorio está desactivado. En server/.env.lab define SMTP_ENABLED=true, reinicia el servidor y ejecuta npm run smtp:lab.',503);
+    if(!env.smtp.enabled) fail('El correo de laboratorio está desactivado. Configura Mailpit antes de enviar.',503);
     await cx.execute("UPDATE transferencia SET estado='ENVIANDO' WHERE id=?",[analysisId]);
     await appendAudit(cx,{actor:req.user.id,action:'SEND_STARTED',resource:analysisId,ip:req.ip});
     return {denied:false};
