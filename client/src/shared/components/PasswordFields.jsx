@@ -17,17 +17,30 @@ const VisibilityOffIcon = icon(VisibilityOffIconModule);
 const CheckCircleIcon = icon(CheckCircleIconModule);
 const RadioButtonUncheckedIcon = icon(RadioButtonUncheckedIconModule);
 
+// Impide que el valor de la contraseña salga del campo por copiar, cortar o arrastrar.
+// Así, aunque el usuario pegue en otra aplicación, no recibe el texto.
+const blockClipboard = event => {
+  event.preventDefault();
+};
+
 /**
  * Campo de contraseña con icono de ojo. El clic alterna entre mostrar y ocultar
  * y el estado se mantiene hasta que el usuario vuelva a hacer clic.
+ * El valor no se puede copiar, cortar ni arrastrar, incluso con el texto visible.
  */
-export function PasswordField({ InputProps, ...props }) {
+export function PasswordField({ InputProps, inputProps, ...props }) {
   const [visible, setVisible] = useState(false);
 
   return (
     <TextField
       {...props}
       type={visible ? 'text' : 'password'}
+      inputProps={{
+        ...inputProps,
+        onCopy: blockClipboard,
+        onCut: blockClipboard,
+        onDragStart: blockClipboard
+      }}
       InputProps={{
         ...InputProps,
         endAdornment: (
