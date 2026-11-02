@@ -17,6 +17,7 @@ import SecurityValidationPage from '../features/security/SecurityValidationPage.
 import ProfilePage from '../features/profile/ProfilePage.jsx';
 import PreferencesPage from '../features/preferences/PreferencesPage.jsx';
 import RolesPage from '../features/roles/RolesPage.jsx';
+import DatosPage from '../features/datos/DatosPage.jsx';
 import RouteErrorPage from '../shared/components/RouteErrorPage.jsx';
 
 // Cada sección exige un permiso del catálogo; el servidor aplica la misma regla en cada endpoint.
@@ -28,7 +29,7 @@ export default createBrowserRouter([{element:<AuthProvider><Outlet/></AuthProvid
  {path:'/reset-password',element:<ResetPasswordPage/>},
  {element:<ProtectedRoute/>,children:[{path:'/',element:<MainLayout/>,children:[
   {index:true,element:<Navigate to="/dashboard" replace/>},
-  {path:'dashboard',element:<DashboardPage/>},{path:'recipients',element:<RecipientsPage/>},
+  {path:'dashboard',element:<DashboardPage/>},{path:'recipients',element:<RecipientsPage/>},{path:'datos',element:<DatosPage/>},
   {path:'profile',element:<ProfilePage/>},{path:'preferences',element:<PreferencesPage/>},{path:'settings',element:<Navigate to="/profile" replace/>},
   {element:<ProtectedRoute roles={['admin']}/>,children:[{path:'admin/roles',element:<RolesPage/>}]},
   {element:<ProtectedRoute permission="usuarios.gestionar"/>,children:[{path:'users',element:<UsersPage/>}]},

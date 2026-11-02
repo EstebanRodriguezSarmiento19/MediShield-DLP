@@ -1,3 +1,4 @@
+import env from '../../config/env.js';
 import pool,{transaction} from '../../db/pool.js';
 import {analyzeTransfer,validateTransfer} from './dlp.service.js';
 import {loadContext,saveAnalysis,getDlpStats,getRecentAnalyses} from './dlp.store.js';
@@ -10,7 +11,7 @@ export async function analyze(req,res) {
     await saveAnalysis(cx,result,req.user,req.ip);
     return result;
   });
-  res.status(201).json({success:true,data:result});
+  res.status(201).json({success:true,data:{...result,mailEnabled:env.smtp.enabled}});
 }
 export async function stats(req,res) {res.json({success:true,data:await getDlpStats(req.user)});}
 export async function recent(req,res) {res.json({success:true,data:await getRecentAnalyses(req.user,pageLimit(req.query.limit))});}

@@ -14,6 +14,7 @@ import mailRoutes from './features/mail/mail.routes.js';
 import usersRoutes from './features/users/users.routes.js';
 import rolesRoutes from './features/roles/roles.routes.js';
 import profileRoutes from './features/profile/profile.routes.js';
+import datosRoutes from './features/datos/datos.routes.js';
 const app=express();
 if (env.production) app.set('trust proxy', 1);
 app.disable('x-powered-by');
@@ -31,6 +32,7 @@ app.use('/api/mail',mailRoutes);
 app.use('/api/users',usersRoutes);
 app.use('/api/roles',rolesRoutes);
 app.use('/api/profile',profileRoutes);
+app.use('/api/datos',datosRoutes);
 app.use('/api',securityRoutes);
 if (env.production) {
   const clientDist=fileURLToPath(new URL('../../client/dist/',import.meta.url));

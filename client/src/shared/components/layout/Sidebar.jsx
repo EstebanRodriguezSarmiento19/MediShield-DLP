@@ -2,6 +2,7 @@ import { Avatar, Box, Divider, Drawer, List, ListItemButton, ListItemIcon, ListI
 import {
   AdminPanelSettingsOutlined,
   Assignment,
+  BarChartOutlined,
   ContactMail,
   DashboardOutlined,
   NotificationsActive,
@@ -24,7 +25,8 @@ const SECTIONS = [
     items: [
       { label: 'Panel de control', path: '/dashboard', icon: DashboardOutlined },
       { label: 'Transferencias', path: '/transfers', icon: SwapHoriz, permission: 'transferencias.enviar' },
-      { label: 'Destinatarios', path: '/recipients', icon: ContactMail }
+      { label: 'Destinatarios', path: '/recipients', icon: ContactMail },
+      { label: 'Datos', path: '/datos', icon: BarChartOutlined }
     ]
   },
   {
