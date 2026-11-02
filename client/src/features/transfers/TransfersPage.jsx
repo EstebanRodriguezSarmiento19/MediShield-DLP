@@ -206,7 +206,12 @@ function TransfersPage() {
                   />
                 </Box>
 
-                {result.decision === 'PERMITIR' && result.status !== 'ENVIADA' && <Button variant="contained" disabled={loading} onClick={send}>Enviar al correo de laboratorio</Button>}
+                {result.decision === 'PERMITIR' && result.status !== 'ENVIADA' && result.mailEnabled === false && (
+                  <Alert severity="warning">
+                    El envío de laboratorio está desactivado. En server/.env.lab define SMTP_ENABLED=true, reinicia el servidor y ejecuta npm run smtp:lab.
+                  </Alert>
+                )}
+                {result.decision === 'PERMITIR' && result.status !== 'ENVIADA' && result.mailEnabled !== false && <Button variant="contained" disabled={loading} onClick={send}>Enviar al correo de laboratorio</Button>}
                 {result.status === 'ENVIADA' && <Alert severity="success">SMTP confirmó la entrega al laboratorio.</Alert>}
                 {result.decision !== 'PERMITIR' && <Alert severity="warning">El correo permanece retenido. No hay envío SMTP.</Alert>}
                 <Divider />
