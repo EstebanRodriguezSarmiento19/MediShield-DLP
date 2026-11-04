@@ -2,6 +2,14 @@
 
 MediShield DLP es un sistema web para prevenir la salida no autorizada de datos clínicos sintéticos. React presenta la interfaz y una API de Node.js toma todas las decisiones de seguridad. MySQL conserva usuarios, sesiones, destinatarios, reglas, transferencias, alertas, historial y auditoría.
 
+## Características Principales
+
+- **Protección de Datos Médicos:** Resguardo estricto de registros médicos electrónicos (EHR).
+- **Detección de Anomalías:** Algoritmos para la identificación de destinatarios anómalos, previniendo fugas de información sensible.
+- **Estándares de Seguridad:** Implementación de arquitecturas y lineamientos de seguridad basados en OWASP Mobile e ISO 27001.
+- **Inspección de Red:** Integración con Snort IDS para el monitoreo y análisis de tráfico malicioso.
+- **Simulación de Phishing:** Uso de Gophish para ejecutar simulaciones de ingeniería social y evaluar la concienciación de los usuarios.
+
 ## Funciones implementadas
 
 - Autenticación real con contraseñas derivadas mediante `scrypt`, sesiones aleatorias almacenadas en MySQL, cookie `HttpOnly` con `SameSite=Strict`, protección CSRF, validación de origen y límite persistente de intentos.
@@ -17,96 +25,94 @@ MediShield DLP es un sistema web para prevenir la salida no autorizada de datos 
 - Receptor SMTP local que guarda archivos `.eml` y nunca retransmite correo a Internet.
 - Cabeceras HTTP de seguridad, respuestas sensibles sin caché y límites de solicitudes.
 
+## Tecnologías Utilizadas
+
+- **Entorno de Ejecución / Framework:** Node.js, Express, React
+- **Base de Datos:** MySQL (Cloud) + MySQL Workbench
+- **Infraestructura Cloud:** Render
+- **Seguridad y Red:** Snort IDS, Gophish
+
+## Arquitectura y Despliegue
+
+El proyecto se encuentra desplegado en la nube garantizando disponibilidad y seguridad:
+- **Hosting y Despliegue:** La aplicación está desplegada en Render, conectada directamente mediante la API de GitHub para permitir un flujo de integración y despliegue continuo (CI/CD) automático tras cada commit.
+- **Base de Datos:** Base de datos relacional MySQL alojada en la nube, estructurada y gestionada a través de MySQL Workbench.
+- **Control de Versiones:** Repositorio centralizado en [GitHub](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP.git).
+
+### Demostración web y colaboración
+La preparación de una web pública gratuita con Render y MySQL alojado en Aiven, junto con la edición desde el navegador y la configuración de despliegue automático desde GitHub, se explica en `docs/DESPLIEGUE_GRATUITO.md`. Usa solo datos sintéticos. Para sincronizar cambios de estructura y configuración entre MySQL local, Aiven y Render, consulte `docs/DESPLIEGUE_Y_MIGRACIONES.md`.
+
 ## Requisitos
 
 - Node.js 20 o superior.
 - npm.
 - MySQL 8 o compatible en ejecución.
 
+## Configuración y Ejecución Local
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone [https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP.git](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP.git)
+   cd MediShield-DLP
+
 ## Preparación inicial
+Copie .env.example como server/.env y configure la conexión administrativa a MySQL.
 
-1. Copie `.env.example` como `server/.env` y configure la conexión administrativa a MySQL.
-2. Instale las dependencias:
+Instale las dependencias:
 
-```powershell
+PowerShell
 cd server
 npm install
 npm run db:setup
 
 cd ..\client
 npm install
-```
 
-`npm run db:setup` crea o actualiza el esquema, carga datos sintéticos, genera cuentas de laboratorio y crea una cuenta SQL con privilegios mínimos. Las contraseñas quedan únicamente en `server/.lab-accounts.json`. La configuración privada queda en `server/.env.lab`. Ambos archivos están excluidos de Git.
+npm run db:setup crea o actualiza el esquema, carga datos sintéticos, genera cuentas de laboratorio y crea una cuenta SQL con privilegios mínimos. Las contraseñas quedan únicamente en server/.lab-accounts.json. La configuración privada queda en server/.env.lab. Ambos archivos están excluidos de Git.
 
-## Crear y administrar cuentas
-
-En la web publicada, un administrador abre **Cuentas**. Puede crear una cuenta
-con rol `usuario`, `analista` o `admin` y conceder por separado el permiso
-«Puede gestionar cuentas». La aplicación envía una invitación al correo real de
-la persona. Ella elige su contraseña; nadie tiene que conocerla ni escribirla
-en Workbench. También se pueden modificar el nombre, correo y permisos,
-desactivar una cuenta y reactivarla. Cambiar el correo invalida la contraseña
-anterior y envía una invitación al nuevo correo. Desactivar conserva la fila y
-el historial para que la auditoría siga siendo verificable.
-
-El registro público se habilita cuando Brevo tiene una clave y un remitente
-configurados. La persona solicita un enlace desde «Regístrate», confirma el
-correo y elige una contraseña; solo entonces se crea la cuenta `usuario`.
-Un enlace vence a los 15 minutos y funciona una vez. Para cerrar el registro
-público sin afectar las invitaciones, configura `ALLOW_PUBLIC_REGISTRATION=false`.
-
-Para «Olvidé mi contraseña», configura un remitente verificado y una clave de
-API de Brevo en Render. Consulta
-[`docs/CUENTAS_Y_RECUPERACION.md`](docs/CUENTAS_Y_RECUPERACION.md).
-
-## Ejecución
-
+## Ejecución EN LOCAL:
 Abra tres terminales en la raíz del proyecto.
 
 Terminal 1:
-
-```powershell
+PowerShell
 cd server
 npm run smtp:lab
-```
 
 Terminal 2:
-
-```powershell
+PowerShell
 cd server
 npm start
-```
 
 Terminal 3:
-
-```powershell
+PowerShell
 cd client
 npm run dev
-```
+Abra http://localhost:5173. Use una cuenta de server/.lab-accounts.json según el rol que quiera demostrar.
 
-Abra `http://localhost:5173`. Use una cuenta de `server/.lab-accounts.json` según el rol que quiera demostrar.
+## Crear y administrar cuentas
+
+En la web publicada, un administrador abre Cuentas. Puede crear una cuenta con rol usuario, analista o admin y conceder por separado el permiso «Puede gestionar cuentas». La aplicación envía una invitación al correo real de la persona. Ella elige su contraseña; nadie tiene que conocerla ni escribirla en Workbench. También se pueden modificar el nombre, correo y permisos, desactivar una cuenta y reactivarla. Cambiar el correo invalida la contraseña anterior y envía una invitación al nuevo correo. Desactivar conserva la fila y el historial para que la auditoría siga siendo verificable.
+
+El registro público se habilita cuando Brevo tiene una clave y un remitente configurados. La persona solicita un enlace desde «Regístrate», confirma el correo y elige una contraseña; solo entonces se crea la cuenta usuario. Un enlace vence a los 15 minutos y funciona una vez. Para cerrar el registro público sin afectar las invitaciones, configura ALLOW_PUBLIC_REGISTRATION=false.
+
+Para «Olvidé mi contraseña», configura un remitente verificado y una clave de API de Brevo en Render. Consulta `docs/CUENTAS_Y_RECUPERACION.md`.
 
 ## Pruebas y evidencias
-
 Pruebas unitarias del motor:
 
-```powershell
+PowerShell
 cd server
 npm test
 npm run verify:accounts:lab
-```
-
 Verificación integral aislada:
 
-```powershell
+PowerShell
 cd server
 npm run verify:lab
-```
 
 La verificación integral inicia una API temporal y un SMTP local, crea cuentas sintéticas descartables, ejecuta 26 controles y guarda el resultado en `evidence/after/verification.json`.
 
-Resultados verificados el 1 de octubre de 2026:
+## Resultados verificados 2026:
 
 - 12 de 12 pruebas unitarias aprobadas.
 - 26 de 26 controles integrales aprobados.
@@ -116,16 +122,7 @@ Resultados verificados el 1 de octubre de 2026:
 - Flujo visual automatizado: 11 capturas y 0 errores JavaScript.
 - Prueba local secuencial de 20 análisis: p50 22 ms, p95 36 ms y máximo 38 ms. Es una observación del equipo local, no una prueba de carga de producción.
 
-Consulte [`docs/VERIFICACION_6_MODULOS.md`](docs/VERIFICACION_6_MODULOS.md) para repetir la demostración y relacionar cada módulo con sus pruebas. Abra `evidence/index.html` para navegar el paquete de evidencia.
+Consulte `docs/VERIFICACION_6_MODULOS.md` para repetir la demostración y relacionar cada módulo con sus pruebas. Abra `evidence/index.html` para navegar el paquete de evidencia.
 
-Para sincronizar cambios de estructura y configuración entre MySQL local,
-Aiven y Render, consulte [`docs/DESPLIEGUE_Y_MIGRACIONES.md`](docs/DESPLIEGUE_Y_MIGRACIONES.md).
-
-## Alcance del laboratorio
-
+Alcance del laboratorio
 El sistema procesa datos sintéticos. El SMTP local recibe y conserva mensajes en disco sin enviarlos a redes externas. Las pruebas HTTP dirigidas cubren autenticación, autorización, CSRF, IDOR, inyección SQL, manipulación de solicitudes y fuzzing básico. No sustituyen una auditoría externa ni una campaña completa con OWASP ZAP.
-
-
-## Demostración web y colaboración
-
-La preparación de una web pública gratuita con Render y MySQL alojado en Aiven, junto con la edición desde el navegador y la configuración de despliegue automático desde GitHub, se explica en [docs/DESPLIEGUE_GRATUITO.md](docs/DESPLIEGUE_GRATUITO.md). Usa solo datos sintéticos.
