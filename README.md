@@ -1,128 +1,256 @@
-# MediShield DLP
+# 🛡️ MediShield DLP
 
-MediShield DLP es un sistema web para prevenir la salida no autorizada de datos clínicos sintéticos. React presenta la interfaz y una API de Node.js toma todas las decisiones de seguridad. MySQL conserva usuarios, sesiones, destinatarios, reglas, transferencias, alertas, historial y auditoría.
+**Sistema de prevención de pérdida y fuga de información (Data Loss Prevention)**
 
-## Características Principales
+MediShield DLP es una aplicación web diseñada para prevenir la salida no autorizada de datos clínicos sintéticos. Cuenta con una interfaz desarrollada en React, una API de Node.js y una base de datos MySQL, incorporando mecanismos de autenticación, autorización, análisis de información sensible, alertas y auditoría de seguridad.
 
-- **Protección de Datos Médicos:** Resguardo estricto de registros médicos electrónicos (EHR).
-- **Detección de Anomalías:** Algoritmos para la identificación de destinatarios anómalos, previniendo fugas de información sensible.
-- **Estándares de Seguridad:** Implementación de arquitecturas y lineamientos de seguridad basados en OWASP Mobile e ISO 27001.
-- **Inspección de Red:** Integración con Snort IDS para el monitoreo y análisis de tráfico malicioso.
-- **Simulación de Phishing:** Uso de Gophish para ejecutar simulaciones de ingeniería social y evaluar la concienciación de los usuarios.
+---
 
-## Funciones implementadas
+## Descripción del proyecto
 
-- Autenticación real con contraseñas derivadas mediante `scrypt`, sesiones aleatorias almacenadas en MySQL, cookie `HttpOnly` con `SameSite=Strict`, protección CSRF, validación de origen y límite persistente de intentos.
-- Roles `admin`, `analista` y `usuario`, aplicados en el servidor.
-- Gestión de cuentas desde la web: invitaciones, cambios de correo y rol, permiso independiente para gestionar cuentas, desactivación y reactivación. Las sesiones se revocan al cambiar acceso.
-- Recuperación de contraseñas mediante correo HTTPS, enlace de 15 minutos y uso único. El servidor almacena solo el hash del token y cierra las sesiones anteriores tras restablecer la clave.
-- Motor DLP que normaliza y valida la entrada, identifica patrones sensibles y decide `PERMITIR`, `ALERTAR` o `BLOQUEAR`.
-- Catálogo persistente de destinatarios autorizados o revocados, con control de versión.
-- Historial remitente-destinatario calculado únicamente a partir de entregas SMTP confirmadas.
-- Reglas DLP administrables, ponderadas, versionadas y protegidas por rol.
-- Alertas persistentes con flujo `ABIERTA → EN_REVISION → CERRADA`, notas y registro de cada transición.
-- Auditoría encadenada con HMAC-SHA256. La cuenta SQL de la aplicación no posee permisos `UPDATE` ni `DELETE` sobre `audit_event`.
-- Receptor SMTP local que guarda archivos `.eml` y nunca retransmite correo a Internet.
-- Cabeceras HTTP de seguridad, respuestas sensibles sin caché y límites de solicitudes.
+MediShield DLP es una solución de seguridad informática enfocada en la protección de información académica y clínica sensible.
 
-## Tecnologías Utilizadas
+Su objetivo es identificar, analizar y controlar los intentos de transferencia de información, evitando posibles fugas de datos mediante políticas de prevención, validación de destinatarios y monitoreo de eventos.
 
-- **Entorno de Ejecución / Framework:** Node.js, Express, React
-- **Base de Datos:** MySQL (Cloud) + MySQL Workbench
-- **Infraestructura Cloud:** Render
-- **Seguridad y Red:** Snort IDS, Gophish
+## Funcionalidades principales
 
-## Arquitectura y Despliegue
+- **Autenticación segura:** contraseñas protegidas mediante `scrypt`, sesiones almacenadas en MySQL y cookies HttpOnly.
+- **Control de acceso:** gestión de permisos basada en roles.
+- **Motor DLP:** identificación de patrones sensibles y clasificación de operaciones.
+- **Gestión de destinatarios:** registro de destinatarios autorizados y revocados.
+- **Reglas de seguridad:** administración de reglas DLP ponderadas y versionadas.
+- **Sistema de alertas:** generación, seguimiento y cierre de alertas.
+- **Auditoría:** registro encadenado mediante HMAC-SHA256.
+- **Receptor SMTP local:** almacenamiento de mensajes de laboratorio sin retransmisión a Internet.
+- **Protección HTTP:** cabeceras de seguridad, protección CSRF y limitación de solicitudes.
 
-El proyecto se encuentra desplegado en la nube garantizando disponibilidad y seguridad:
-- **Hosting y Despliegue:** La aplicación está desplegada en Render, conectada directamente mediante la API de GitHub para permitir un flujo de integración y despliegue continuo (CI/CD) automático tras cada commit.
-- **Base de Datos:** Base de datos relacional MySQL alojada en la nube, estructurada y gestionada a través de MySQL Workbench.
-- **Control de Versiones:** Repositorio centralizado en [GitHub](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP.git).
+## Arquitectura del sistema
 
-### Demostración web y colaboración
-La preparación de una web pública gratuita con Render y MySQL alojado en Aiven, junto con la edición desde el navegador y la configuración de despliegue automático desde GitHub, se explica en `docs/DESPLIEGUE_GRATUITO.md`. Usa solo datos sintéticos. Para sincronizar cambios de estructura y configuración entre MySQL local, Aiven y Render, consulte `docs/DESPLIEGUE_Y_MIGRACIONES.md`.
+El proyecto está organizado en tres componentes principales:
 
-## Requisitos
+| Componente | Descripción |
+|---|---|
+| Frontend | Interfaz web desarrollada con React. |
+| Backend | API desarrollada con Node.js. |
+| Base de datos | MySQL para persistencia de usuarios, sesiones, alertas y auditoría. |
 
-- Node.js 20 o superior.
-- npm.
-- MySQL 8 o compatible en ejecución.
+## Tecnologías utilizadas
 
-## Configuración y Ejecución Local
+- React
+- JavaScript
+- Node.js
+- MySQL
+- Express
+- Vite
+- SMTP local
+- HMAC-SHA256
+- Git y GitHub
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone [https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP.git](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP.git)
-   cd MediShield-DLP
+## Estructura del repositorio
 
-## Preparación inicial
-Copie .env.example como server/.env y configure la conexión administrativa a MySQL.
+```text
+MediShield-DLP/
+│
+├── .github/
+│   └── workflows/
+│
+├── client/
+│   └── Aplicación frontend React
+│
+├── server/
+│   └── API y lógica de seguridad
+│
+├── database/
+│   └── Archivos de base de datos
+│
+├── docs/
+│   └── Documentación técnica
+│
+├── evidence/
+│   └── Evidencias y resultados de pruebas
+│
+├── .env.example
+├── .gitignore
+├── Dockerfile
+├── package-lock.json
+└── README.md
+```
 
-Instale las dependencias:
+### Acceso directo a las carpetas
 
-PowerShell
+- [Frontend – Client](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/tree/main/client)
+- [Backend – Server](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/tree/main/server)
+- [Base de datos – Database](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/tree/main/database)
+- [Documentación – Docs](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/tree/main/docs)
+- [Evidencias – Evidence](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/tree/main/evidence)
+- [GitHub Actions](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/tree/main/.github/workflows)
+
+## equisitos previos
+
+Antes de ejecutar el proyecto, asegúrese de contar con:
+
+- Node.js 20 o superior
+- npm
+- MySQL 8 o compatible
+- Git
+
+## Instalación y configuración
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP.git
+```
+
+### 2. Ingresar al proyecto
+
+```bash
+cd MediShield-DLP
+```
+
+### 3. Configurar las variables de entorno
+
+Copiar el archivo de ejemplo a la carpeta del servidor.
+
+**Windows PowerShell:**
+
+```powershell
+Copy-Item .env.example server/.env
+```
+
+**Linux / macOS:**
+
+```bash
+cp .env.example server/.env
+```
+
+Editar `server/.env` y configurar los parámetros de conexión a MySQL según el entorno local.
+
+### 4. Instalar dependencias del backend
+
+```bash
 cd server
 npm install
+```
+
+### 5. Configurar la base de datos
+
+```bash
 npm run db:setup
+```
 
-cd ..\client
+Este comando prepara el esquema de la base de datos, carga datos sintéticos, genera cuentas de laboratorio y configura una cuenta SQL con privilegios mínimos.
+
+### 6. Instalar dependencias del frontend
+
+```bash
+cd ../client
 npm install
+```
 
-npm run db:setup crea o actualiza el esquema, carga datos sintéticos, genera cuentas de laboratorio y crea una cuenta SQL con privilegios mínimos. Las contraseñas quedan únicamente en server/.lab-accounts.json. La configuración privada queda en server/.env.lab. Ambos archivos están excluidos de Git.
+## Ejecución del proyecto EN LOCAL
 
-## Ejecución EN LOCAL:
-Abra tres terminales en la raíz del proyecto.
+Para ejecutar MediShield DLP se deben abrir **tres terminales independientes** desde la carpeta raíz del proyecto.
 
-Terminal 1:
-PowerShell
+### Terminal 1 – Servidor SMTP local
+
+```bash
 cd server
 npm run smtp:lab
+```
 
-Terminal 2:
-PowerShell
+### Terminal 2 – Backend
+
+```bash
 cd server
 npm start
+```
 
-Terminal 3:
-PowerShell
+### Terminal 3 – Frontend
+
+```bash
 cd client
 npm run dev
-Abra http://localhost:5173. Use una cuenta de server/.lab-accounts.json según el rol que quiera demostrar.
+```
 
-## Crear y administrar cuentas
+### Acceso a la aplicación
 
-En la web publicada, un administrador abre Cuentas. Puede crear una cuenta con rol usuario, analista o admin y conceder por separado el permiso «Puede gestionar cuentas». La aplicación envía una invitación al correo real de la persona. Ella elige su contraseña; nadie tiene que conocerla ni escribirla en Workbench. También se pueden modificar el nombre, correo y permisos, desactivar una cuenta y reactivarla. Cambiar el correo invalida la contraseña anterior y envía una invitación al nuevo correo. Desactivar conserva la fila y el historial para que la auditoría siga siendo verificable.
+Una vez iniciados los tres servicios, abrir el siguiente enlace en el navegador:
 
-El registro público se habilita cuando Brevo tiene una clave y un remitente configurados. La persona solicita un enlace desde «Regístrate», confirma el correo y elige una contraseña; solo entonces se crea la cuenta usuario. Un enlace vence a los 15 minutos y funciona una vez. Para cerrar el registro público sin afectar las invitaciones, configura ALLOW_PUBLIC_REGISTRATION=false.
+[http://localhost:5173](http://localhost:5173)
 
-Para «Olvidé mi contraseña», configura un remitente verificado y una clave de API de Brevo en Render. Consulta `docs/CUENTAS_Y_RECUPERACION.md`.
+Utilizar las credenciales generadas en `server/.lab-accounts.json` para ingresar según el rol que se desee demostrar.
 
-## Pruebas y evidencias
-Pruebas unitarias del motor:
+## Roles del sistema
 
-PowerShell
+MediShield DLP incorpora tres roles principales:
+
+| Rol | Descripción |
+|---|---|
+| Administrador | Administración y configuración general del sistema. |
+| Analista | Supervisión de alertas y eventos de seguridad. |
+| Usuario | Acceso a las funcionalidades autorizadas para usuarios. |
+
+Los permisos son validados desde el backend para evitar accesos no autorizados.
+
+## Pruebas y verificación
+
+### 1. Ejecutar pruebas unitarias
+
+```bash
 cd server
 npm test
-npm run verify:accounts:lab
-Verificación integral aislada:
+```
 
-PowerShell
+### 2. Ejecutar verificación integral
+
+```bash
 cd server
 npm run verify:lab
+```
 
-La verificación integral inicia una API temporal y un SMTP local, crea cuentas sintéticas descartables, ejecuta 26 controles y guarda el resultado en `evidence/after/verification.json`.
+La verificación integral inicia una API temporal y un servidor SMTP local, genera cuentas sintéticas descartables y ejecuta 26 controles de seguridad.
 
-## Resultados verificados 2026:
+### Resultados de verificación
 
-- 12 de 12 pruebas unitarias aprobadas.
-- 26 de 26 controles integrales aprobados.
-- SAST: 0 errores y 0 advertencias en el backend.
-- SCA: 0 vulnerabilidades reportadas en cliente y servidor.
-- Compilación del cliente completada.
-- Flujo visual automatizado: 11 capturas y 0 errores JavaScript.
-- Prueba local secuencial de 20 análisis: p50 22 ms, p95 36 ms y máximo 38 ms. Es una observación del equipo local, no una prueba de carga de producción.
+Resultados documentados el 1 de octubre de 2026:
 
-Consulte `docs/VERIFICACION_6_MODULOS.md` para repetir la demostración y relacionar cada módulo con sus pruebas. Abra `evidence/index.html` para navegar el paquete de evidencia.
+| Prueba | Resultado |
+|---|---|
+| Pruebas unitarias | 12/12 aprobadas |
+| Controles integrales | 26/26 aprobados |
+| SAST Backend | 0 errores y 0 advertencias |
+| SCA | 0 vulnerabilidades reportadas |
+| Compilación frontend | Completada |
+| Pruebas visuales automatizadas | 11 capturas, 0 errores JavaScript |
 
-Alcance del laboratorio
-El sistema procesa datos sintéticos. El SMTP local recibe y conserva mensajes en disco sin enviarlos a redes externas. Las pruebas HTTP dirigidas cubren autenticación, autorización, CSRF, IDOR, inyección SQL, manipulación de solicitudes y fuzzing básico. No sustituyen una auditoría externa ni una campaña completa con OWASP ZAP.
+Los resultados corresponden al entorno de laboratorio y no representan una certificación de seguridad de producción.
+
+## Evidencias y documentación
+
+Para consultar los documentos técnicos y resultados de las pruebas, acceder a los siguientes recursos:
+
+- [Verificación de los 6 módulos](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/blob/main/docs/VERIFICACION_6_MODULOS.md)
+- [Guía de despliegue gratuito](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/blob/main/docs/DESPLIEGUE_GRATUITO.md)
+- [Evidencias de verificación](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/tree/main/evidence)
+- [Índice de evidencias](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP/blob/main/evidence/index.html)
+
+## Alcance del laboratorio
+
+MediShield DLP trabaja con datos clínicos sintéticos. El receptor SMTP local almacena los mensajes en disco sin retransmitirlos a redes externas.
+
+El proyecto incorpora controles de autenticación, autorización, protección CSRF, prevención de IDOR, inyección SQL, manipulación de solicitudes y fuzzing básico.
+
+Estas pruebas no sustituyen una auditoría externa ni una evaluación completa de seguridad en producción.
+
+## Repositorio
+
+**MediShield DLP – GitHub**
+
+[![GitHub Repository](https://img.shields.io/badge/GitHub-MediShield--DLP-black?logo=github)](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP)
+
+[📂 Ver código fuente](https://github.com/EstebanRodriguezSarmiento19/MediShield-DLP)
+
+---
+
+**MediShield DLP | Proyecto de seguridad informática y prevención de pérdida de información.**
